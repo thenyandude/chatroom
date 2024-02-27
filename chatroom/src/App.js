@@ -1,23 +1,45 @@
-import logo from './logo.svg';
-import './App.css';
+// src/App.js
+import React, { useState } from 'react';
+import Register from './Register';
+import Login from './Login';
 
 function App() {
+  const [messages, setMessages] = useState([]);
+  const [message, setMessage] = useState('');
+
+  const sendMessage = async () => {
+    if (message) {
+      try {
+        const response = await fetch('http://localhost:5000/send-message', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ message }),
+        });
+        const newMessage = await response.json();
+        setMessages([...messages, newMessage]);
+        setMessage('');
+      } catch (error) {
+        console.error('Error sending message:', error);
+      }
+    }
+  };
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div>
+
+      <Register />
+
+      <Login />
+      
+      <div>
+        {messages.map((msg, index) => (
+          <div key={index}>{msg.content}</div>
+        ))}
+      </div>
+      <input type="text" value={message} onChange={(e) => setMessage(e.target.value)} />
+      <button onClick={sendMessage}>Send</button>
     </div>
   );
 }
