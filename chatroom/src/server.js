@@ -1,35 +1,60 @@
 const express = require('express');
-const bodyParser = require('body-parser');
-const bcrypt = require('bcrypt');
 const fs = require('fs');
 const path = require('path');
-
-const privatePath = path.join(__dirname, 'private');
-const messagesFilePath = path.join(privatePath, 'messages.json');
-
-if (!fs.existsSync(privatePath)) {
-  fs.mkdirSync(privatePath, { recursive: true });
-}
-
-// Read existing messages from the file, or initialize an empty array if the file doesn't exist
-let messages = fs.existsSync(messagesFilePath) 
-               ? JSON.parse(fs.readFileSync(messagesFilePath, 'utf8')) 
-               : [];
+const bodyParser = require('body-parser');
+const bcrypt = require('bcrypt');
 
 const app = express();
 app.use(bodyParser.json());
 app.use(require('cors')()); // Enable CORS
 
-// Function to ensure the required directory and file structure for users.json
+// Function to ensure the required directory and file structure
 function ensureDirectoryStructure() {
-  const usersFilePath = path.join(privatePath, 'users.json');
+  const privatePath = path.join(__dirname, 'private');
+  const usersPath = path.join(privatePath, 'users');
+  const chatsPath = path.join(privatePath, 'chats');
 
-  if (!fs.existsSync(usersFilePath)) {
-    fs.writeFileSync(usersFilePath, JSON.stringify([]));
+  // Ensure the private directory exists
+  if (!fs.existsSync(privatePath)) {
+    fs.mkdirSync(privatePath, { recursive: true });
+  }
+
+  // Ensure the users directory exists
+  if (!fs.existsSync(usersPath)) {
+    fs.mkdirSync(usersPath, { recursive: true });
+  }
+
+  // Ensure the chats directory exists
+  if (!fs.existsSync(chatsPath)) {
+    fs.mkdirSync(chatsPath, { recursive: true });
+  }
+
+  // Create a 'general.json' in chats directory if it doesn't exist
+  const generalChatPath = path.join(chatsPath, 'general.json');
+  if (!fs.existsSync(generalChatPath)) {
+    fs.writeFileSync(generalChatPath, JSON.stringify([]));
   }
 }
 
+// Call the function to ensure the structure on server start
 ensureDirectoryStructure();
+
+// Endpoint to send messages
+const chatsPath = path.join(__dirname, 'private', 'chats');
+const generalChatPath = path.join(chatsPath, 'general.json');
+
+// Function to read messages from the general chat file
+function readMessages() {
+  if (fs.existsSync(generalChatPath)) {
+    return JSON.parse(fs.readFileSync(generalChatPath, 'utf8'));
+  }
+  return [];
+}
+
+// Function to write messages to the general chat file
+function writeMessages(messages) {
+  fs.writeFileSync(generalChatPath, JSON.stringify(messages, null, 2));
+}
 
 // Endpoint to send messages
 app.post('/send-message', (req, res) => {
@@ -39,44 +64,36 @@ app.post('/send-message', (req, res) => {
     content: message, 
     timestamp: new Date().toISOString()
   };
+
+  const messages = readMessages();
   messages.push(newMessage);
+  writeMessages(messages);
 
-  // Write the updated messages array to the file
-  fs.writeFile(messagesFilePath, JSON.stringify(messages, null, 2), err => {
-    if (err) {
-      console.error('Error writing to messages file:', err);
-      return res.status(500).send('Error saving message');
-    }
-    res.json(newMessage);
-  });
+  res.json(newMessage);
 });
-
 
 app.get('/get-messages', (req, res) => {
+  const messages = readMessages();
   res.json(messages);
 });
-
 
 app.post('/register', async (req, res) => {
   try {
     const { username, password } = req.body;
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = { username, password: hashedPassword };
-    const usersPath = path.join(__dirname, '/private/users.json');
+    const userFilePath = path.join(__dirname, 'private', 'users', `${username}.json`);
 
-    // Check if users file exists
-    if (!fs.existsSync(usersPath)) {
-      fs.writeFileSync(usersPath, JSON.stringify([]));
-    }
-
-    const users = JSON.parse(fs.readFileSync(usersPath));
-    if (users.find(u => u.username === username)) {
+    // Check if user file already exists
+    if (fs.existsSync(userFilePath)) {
       return res.status(400).send('User already exists');
     }
 
-    users.push(user);
-    fs.writeFileSync(usersPath, JSON.stringify(users));
+    const user = { username, password: hashedPassword };
+    
+    // Write the user data to a file named {username}.json
+    fs.writeFileSync(userFilePath, JSON.stringify(user));
+
     res.status(201).send('User registered');
   } catch (error) {
     res.status(500).send('Error registering user');
@@ -84,23 +101,29 @@ app.post('/register', async (req, res) => {
 });
 
 app.post('/login', async (req, res) => {
-    try {
-      const { username, password } = req.body;
-      const usersPath = path.join(__dirname, 'private', 'users.json');
-  
-      const users = JSON.parse(fs.readFileSync(usersPath));
-      const user = users.find(u => u.username === username);
-  
-      if (user && await bcrypt.compare(password, user.password)) {
-        res.status(200).send('Login successful');
-      } else {
-        res.status(401).send('Invalid credentials');
-      }
-    } catch (error) {
-      res.status(500).send('Error logging in');
+  try {
+    const { username, password } = req.body;
+    const userFilePath = path.join(__dirname, 'private', 'users', `${username}.json`);
+
+    // Check if user file exists
+    if (!fs.existsSync(userFilePath)) {
+      return res.status(401).send('Invalid credentials');
     }
-  });
-  
+
+    const user = JSON.parse(fs.readFileSync(userFilePath));
+
+    // Compare the provided password with the stored hashed password
+    if (await bcrypt.compare(password, user.password)) {
+      res.status(200).send('Login successful');
+    } else {
+      res.status(401).send('Invalid credentials');
+    }
+  } catch (error) {
+    res.status(500).send('Error logging in');
+  }
+});
+
+
 
 app.listen(5000, () => {
   console.log('Server is running on port 5000');
