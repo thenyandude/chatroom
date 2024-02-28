@@ -1,7 +1,7 @@
 // src/Login.js
 import React, { useState } from 'react';
 
-function Login() {
+function Login({ onLogin }) { // Add a prop to receive the function from App.js
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
@@ -17,6 +17,7 @@ function Login() {
       });
       if (response.ok) {
         alert('Login successful');
+        onLogin(username); // Call the function passed from App.js with the username
       } else {
         alert('Invalid credentials');
       }

@@ -28,11 +28,16 @@ ensureDirectoryStructure();
 let messages = [];
 
 app.post('/send-message', (req, res) => {
-  const { message } = req.body;
-  const newMessage = { content: message, timestamp: new Date() };
+  const { message, username } = req.body; // Assuming username is sent in the request
+  const newMessage = { 
+    username, 
+    content: message, 
+    timestamp: new Date().toISOString() // ISO format for timestamp
+  };
   messages.push(newMessage);
   res.json(newMessage);
 });
+
 
 app.post('/register', async (req, res) => {
   try {
