@@ -24,4 +24,4 @@ yarn-error.log*
 
 
 # .gitignore
-/private/
+src/private/*
