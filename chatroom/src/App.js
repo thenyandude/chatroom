@@ -1,6 +1,5 @@
 // src/App.js
-import React, { useState } from 'react';
-import Register from './Register';
+import React, { useState, useEffect } from 'react';import Register from './Register';
 import Login from './Login';
 
 function App() {
@@ -8,8 +7,21 @@ function App() {
   const [message, setMessage] = useState('');
   const [username, setUsername] = useState(''); // State for storing the logged-in username
 
+  useEffect(() => {
+    const storedUsername = localStorage.getItem('username');
+    if (storedUsername) {
+      setUsername(storedUsername);
+    }
+  }, []);
+
   const handleLogin = (loggedInUsername) => {
-    setUsername(loggedInUsername); // Update the username when the user logs in
+    setUsername(loggedInUsername);
+    localStorage.setItem('username', loggedInUsername); // Save username to local storage
+  };
+
+  const handleLogout = () => {
+    setUsername(''); // Clear username from state
+    localStorage.removeItem('username'); // Clear username from local storage
   };
 
   const sendMessage = async () => {
@@ -33,19 +45,27 @@ function App() {
 
   return (
     <div>
-      <Register />
-      <Login onLogin={handleLogin} />
-      <div>
-        {messages.map((msg, index) => (
-          <div key={index}>
-            <strong>{msg.username}: </strong>{msg.content}
-            <br />
-            <small style={{ fontSize: '0.8em' }}>{new Date(msg.timestamp).toLocaleString()}</small>
+      {username ? (
+        <>
+          <p>Welcome, {username}! <button onClick={handleLogout}>Logout</button></p>
+          <div>
+            {messages.map((msg, index) => (
+              <div key={index}>
+                <strong>{msg.username}: </strong>{msg.content}
+                <br />
+                <small style={{ fontSize: '0.8em' }}>{new Date(msg.timestamp).toLocaleString()}</small>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
-      <input type="text" value={message} onChange={(e) => setMessage(e.target.value)} />
-      <button onClick={sendMessage}>Send</button>
+          <input type="text" value={message} onChange={(e) => setMessage(e.target.value)} />
+          <button onClick={sendMessage}>Send</button>
+        </>
+      ) : (
+        <>
+          <Register />
+          <Login onLogin={handleLogin} />
+        </>
+      )}
     </div>
   );
 }
