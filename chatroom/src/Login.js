@@ -1,9 +1,11 @@
 // src/Login.js
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate instead of useHistory
 
-function Login({ onLogin }) { // Add a prop to receive the function from App.js
+function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const navigate = useNavigate(); // useNavigate hook for navigation
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -17,7 +19,8 @@ function Login({ onLogin }) { // Add a prop to receive the function from App.js
       });
       if (response.ok) {
         alert('Login successful');
-        onLogin(username); // Call the function passed from App.js with the username
+        localStorage.setItem('username', username); // Store username in local storage
+        navigate('/chat'); // Navigate to the chat page
       } else {
         alert('Invalid credentials');
       }

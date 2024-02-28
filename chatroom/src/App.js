@@ -1,5 +1,7 @@
 // src/App.js
-import React, { useState, useEffect } from 'react';import Register from './Register';
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom';
+import Register from './Register';
 import Login from './Login';
 
 function App() {
@@ -16,12 +18,12 @@ function App() {
 
   const handleLogin = (loggedInUsername) => {
     setUsername(loggedInUsername);
-    localStorage.setItem('username', loggedInUsername); // Save username to local storage
+    localStorage.setItem('username', loggedInUsername);
   };
 
   const handleLogout = () => {
-    setUsername(''); // Clear username from state
-    localStorage.removeItem('username'); // Clear username from local storage
+    setUsername('');
+    localStorage.removeItem('username');
   };
 
   const sendMessage = async () => {
@@ -44,29 +46,33 @@ function App() {
   };
 
   return (
-    <div>
-      {username ? (
-        <>
-          <p>Welcome, {username}! <button onClick={handleLogout}>Logout</button></p>
-          <div>
-            {messages.map((msg, index) => (
-              <div key={index}>
-                <strong>{msg.username}: </strong>{msg.content}
-                <br />
-                <small style={{ fontSize: '0.8em' }}>{new Date(msg.timestamp).toLocaleString()}</small>
+    <Router>
+      <Routes>
+        <Route path="/" element={<Navigate replace to="/register" />} />
+        <Route path="/register" element={username ? <Navigate replace to="/chat" /> : <Register />} />
+        <Route path="/login" element={username ? <Navigate replace to="/chat" /> : <Login onLogin={handleLogin} />} />
+        <Route path="/chat" element={
+          username ? (
+            <>
+              <p>Welcome, {username}! <button onClick={handleLogout}>Logout</button></p>
+              <div>
+                {messages.map((msg, index) => (
+                  <div key={index}>
+                    <strong>{msg.username}: </strong>{msg.content}
+                    <br />
+                    <small style={{ fontSize: '0.8em' }}>{new Date(msg.timestamp).toLocaleString()}</small>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-          <input type="text" value={message} onChange={(e) => setMessage(e.target.value)} />
-          <button onClick={sendMessage}>Send</button>
-        </>
-      ) : (
-        <>
-          <Register />
-          <Login onLogin={handleLogin} />
-        </>
-      )}
-    </div>
+              <input type="text" value={message} onChange={(e) => setMessage(e.target.value)} />
+              <button onClick={sendMessage}>Send</button>
+            </>
+          ) : (
+            <Navigate replace to="/login" />
+          )
+        } />
+      </Routes>
+    </Router>
   );
 }
 
