@@ -1,22 +1,28 @@
-// Assuming this is chat-server/index.js inside the src directory
 const express = require('express');
 const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt');
 const fs = require('fs');
 const path = require('path');
 
+const privatePath = path.join(__dirname, 'private');
+const messagesFilePath = path.join(privatePath, 'messages.json');
+
+if (!fs.existsSync(privatePath)) {
+  fs.mkdirSync(privatePath, { recursive: true });
+}
+
+// Read existing messages from the file, or initialize an empty array if the file doesn't exist
+let messages = fs.existsSync(messagesFilePath) 
+               ? JSON.parse(fs.readFileSync(messagesFilePath, 'utf8')) 
+               : [];
+
 const app = express();
 app.use(bodyParser.json());
 app.use(require('cors')()); // Enable CORS
 
-// Function to ensure the required directory and file structure
+// Function to ensure the required directory and file structure for users.json
 function ensureDirectoryStructure() {
-  const privatePath = path.join(__dirname, 'private');
   const usersFilePath = path.join(privatePath, 'users.json');
-
-  if (!fs.existsSync(privatePath)) {
-    fs.mkdirSync(privatePath, { recursive: true });
-  }
 
   if (!fs.existsSync(usersFilePath)) {
     fs.writeFileSync(usersFilePath, JSON.stringify([]));
@@ -25,17 +31,29 @@ function ensureDirectoryStructure() {
 
 ensureDirectoryStructure();
 
-let messages = [];
-
+// Endpoint to send messages
 app.post('/send-message', (req, res) => {
-  const { message, username } = req.body; // Assuming username is sent in the request
+  const { message, username } = req.body;
   const newMessage = { 
     username, 
     content: message, 
-    timestamp: new Date().toISOString() // ISO format for timestamp
+    timestamp: new Date().toISOString()
   };
   messages.push(newMessage);
-  res.json(newMessage);
+
+  // Write the updated messages array to the file
+  fs.writeFile(messagesFilePath, JSON.stringify(messages, null, 2), err => {
+    if (err) {
+      console.error('Error writing to messages file:', err);
+      return res.status(500).send('Error saving message');
+    }
+    res.json(newMessage);
+  });
+});
+
+
+app.get('/get-messages', (req, res) => {
+  res.json(messages);
 });
 
 

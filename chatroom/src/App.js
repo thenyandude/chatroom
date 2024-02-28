@@ -45,6 +45,21 @@ function App() {
     }
   };
 
+  useEffect(() => {
+    // Fetch messages from the server
+    const fetchMessages = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/get-messages');
+        const data = await response.json();
+        setMessages(data);
+      } catch (error) {
+        console.error('Error fetching messages:', error);
+      }
+    };
+
+    fetchMessages();
+  }, []);
+
   return (
     <Router>
       <Routes>
