@@ -8,4 +8,4 @@ const messageSchema = new mongoose.Schema({
   timestamp: { type: Date, default: Date.now }
 });
 
-module.exports = mongoose.model('Message', messageSchema, 'general');
+module.exports = mongoose.model('Message', messageSchema, 'chats');
