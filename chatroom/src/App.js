@@ -1,13 +1,13 @@
-// src/App.js
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Register from './Register';
 import Login from './Login';
 
 function App() {
   const [messages, setMessages] = useState([]);
   const [message, setMessage] = useState('');
-  const [username, setUsername] = useState(''); // State for storing the logged-in username
+  const [username, setUsername] = useState('');
+  const [socket, setSocket] = useState(null);
 
   useEffect(() => {
     const storedUsername = localStorage.getItem('username');
@@ -24,41 +24,53 @@ function App() {
   const handleLogout = () => {
     setUsername('');
     localStorage.removeItem('username');
+    if (socket) {
+      socket.close();
+    }
   };
 
-  const sendMessage = async () => {
-    if (message && username) {
-      try {
-        const response = await fetch('http://localhost:5000/send-message', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ message, username }), // Include the username in the message
-        });
-        const newMessage = await response.json();
-        setMessages([...messages, newMessage]);
-        setMessage('');
-      } catch (error) {
-        console.error('Error sending message:', error);
-      }
+  const sendMessage = () => {
+    if (socket && message) {
+      const messageObject = { user: username, text: message };
+      socket.send(JSON.stringify(messageObject));
+      setMessage('');
     }
   };
 
   useEffect(() => {
-    // Fetch messages from the server
-    const fetchMessages = async () => {
-      try {
-        const response = await fetch('http://localhost:5000/get-messages');
-        const data = await response.json();
+    if (!username) return;
+    
+    const newSocket = new WebSocket('ws://localhost:5000');
+
+    newSocket.onopen = () => {
+      console.log('WebSocket Connected');
+    };
+
+    newSocket.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      // If an array is received, it's the initial message history
+      if (Array.isArray(data)) {
         setMessages(data);
-      } catch (error) {
-        console.error('Error fetching messages:', error);
+      } else {
+        // If it's an object, it's a new message
+        setMessages((prevMessages) => [...prevMessages, data]);
       }
     };
 
-    fetchMessages();
-  }, []);
+    newSocket.onclose = (event) => {
+      console.log('WebSocket Disconnected:', event);
+    };
+
+    newSocket.onerror = (error) => {
+      console.error('WebSocket Error:', error);
+    };
+
+    setSocket(newSocket);
+
+    return () => {
+      newSocket.close();
+    };
+  }, [username]);
 
   return (
     <Router>
@@ -73,9 +85,11 @@ function App() {
               <div>
                 {messages.map((msg, index) => (
                   <div key={index}>
-                    <strong>{msg.username}: </strong>{msg.content}
+                    <strong>{msg.user}: </strong>{msg.text}
                     <br />
-                    <small style={{ fontSize: '0.8em' }}>{new Date(msg.timestamp).toLocaleString()}</small>
+                    <small style={{ fontSize: '0.8em' }}>
+                      {new Date(msg.timestamp).toLocaleString()}
+                    </small>
                   </div>
                 ))}
               </div>
