@@ -40,44 +40,68 @@ server.listen(5000, () => {
 
 
 // Registration endpoint
-// Registration endpoint
 app.post('/register', authController.register);
 
 // Login endpoint
 app.post('/login', authController.login);
 
 
+// Get all rooms
+app.get('/rooms', async (req, res) => {
+  const rooms = await Message.distinct('room');
+  res.json(rooms);
+
+  const defaultRooms = ['general', 'code', 'music', 'gaming'];
+
+
+  defaultRooms.forEach(async (roomName) => {
+    const exists = await Message.findOne({ room: roomName });
+    if (!exists) {
+      const initialMessage = new Message({
+        room: roomName,
+        user: 'System',
+        text: `Welcome to the ${roomName} room!`,
+        timestamp: new Date()
+      });
+      await initialMessage.save();
+    }
+  });
+});
+
+// Create a room
+app.post('/rooms', async (req, res) => {
+  const { roomName } = req.body;
+  // You might want to create an initial message or room document here
+  res.status(201).json({ message: `Room ${roomName} created` });
+});
 
 // WebSocket server
+// Corrected WebSocket server code
 const wss = new WebSocket.Server({ server });
 
 wss.on('connection', (ws) => {
-  console.log('Client connected');
+  let currentRoom = 'general'; // Default room
 
-  // Fetch and send all messages from MongoDB when a client connects.
-  GeneralChat.find().sort({ timestamp: 1 }).then(messages => {
-    ws.send(JSON.stringify(messages));
-  }).catch(err => {
-    console.error('Failed to retrieve message history:', err);
-  });
-
-  ws.on('message', async (message) => {
-    try {
-      const parsedMessage = JSON.parse(message);
-      const newMessage = new GeneralChat(parsedMessage);
-
-      // Save the new message to MongoDB
-      const savedMessage = await newMessage.save();
-
-      // Broadcast the saved message to all connected clients
-      const messageToSend = JSON.stringify(savedMessage);
-      wss.clients.forEach((client) => {
-        if (client.readyState === WebSocket.OPEN) {
-          client.send(messageToSend);
-        }
-      });
-    } catch (err) {
-      console.error('Error handling the new message:', err);
+  ws.on('message', (messageData) => {
+    const data = JSON.parse(messageData);
+    if (data.type === 'joinRoom') {
+      currentRoom = data.room;
+      GeneralChat.find({ room: currentRoom }).sort({ timestamp: 1 })
+        .then(messages => {
+          ws.send(JSON.stringify({ type: 'roomMessages', messages }));
+        })
+        .catch(err => {
+          console.error('Failed to retrieve message history:', err);
+        });
+    } else if (data.type === 'message') {
+      const newMessage = new GeneralChat({ user: data.user, room: currentRoom, text: data.text });
+      newMessage.save().then(savedMessage => {
+        wss.clients.forEach(client => {
+          if (client.readyState === WebSocket.OPEN && currentRoom === data.room) {
+            client.send(JSON.stringify({ type: 'newMessage', message: savedMessage }));
+          }
+        });
+      }).catch(err => console.error(err));
     }
   });
 
