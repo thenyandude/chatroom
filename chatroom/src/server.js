@@ -1,31 +1,91 @@
+// src/server.js
 const express = require('express');
 const http = require('http');
 const WebSocket = require('ws');
 const bodyParser = require('body-parser');
-const bcrypt = require('bcrypt');
 const mongoose = require('mongoose');
+const authRoutes = require('./routes/authRoutes');
+const chatRoutes = require('./routes/chatRoutes');
+const bcrypt = require('bcrypt');
+
+const User = require('./models/userModel');
+const GeneralChat = require('./models/messageModel');
+
 
 const app = express();
 app.use(bodyParser.json());
-app.use(require('cors')()); // Enable CORS
+app.use(require('cors')());
 
-// Connecting to the 'chatroom' database
 mongoose.connect('mongodb://127.0.0.1:27017/chatroom', {
   useNewUrlParser: true,
   useUnifiedTopology: true
+}).then(() => {
+  console.log('Connected to MongoDB');
+}).catch(err => {
+  console.error('Error connecting to MongoDB', err);
 });
 
-// Define a schema for your messages in the 'general' collection
-const messageSchema = new mongoose.Schema({
-  user: String,
-  text: String,
-  timestamp: { type: Date, default: Date.now }
-});
 
-// Create a model from the schema for the 'general' collection
-const GeneralChat = mongoose.model('GeneralChat', messageSchema, 'general');
+// Use the auth and chat routes
+app.use('/auth', authRoutes);
+app.use('/chat', chatRoutes);
+
+// ...WebSocket setup and other middleware...
 
 const server = http.createServer(app);
+server.listen(5000, () => {
+  console.log('Server is running on http://localhost:5000');
+});
+
+
+// Registration endpoint
+app.post('/register', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    
+    // Check if the user already exists
+    const userExists = await User.findOne({ username });
+    if (userExists) {
+      return res.status(400).send('User already exists');
+    }
+
+    // Hash the password before saving the user
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = new User({ username, password: hashedPassword });
+
+    // Save the new user
+    await newUser.save();
+    res.status(201).send('User registered');
+  } catch (error) {
+    res.status(500).send('Error registering user');
+  }
+});
+
+// Login endpoint
+app.post('/login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    
+    // Find the user by username
+    const user = await User.findOne({ username });
+    if (!user) {
+      return res.status(401).send('Invalid credentials');
+    }
+
+    // Compare the provided password with the stored hashed password
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(401).send('Invalid credentials');
+    }
+
+    // If login is successful, you might want to start a session or issue a token
+    res.status(200).send('Login successful');
+  } catch (error) {
+    res.status(500).send('Error logging in');
+  }
+});
+
+
 
 // WebSocket server
 const wss = new WebSocket.Server({ server });
@@ -63,9 +123,4 @@ wss.on('connection', (ws) => {
   ws.on('close', () => {
     console.log('Client disconnected');
   });
-});
-
-// Start the HTTP server
-server.listen(5000, () => {
-  console.log('Server is running on http://localhost:5000');
 });
