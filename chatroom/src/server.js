@@ -6,19 +6,20 @@ const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const authRoutes = require('./routes/authRoutes');
 const chatRoutes = require('./routes/chatRoutes');
-const bcrypt = require('bcrypt');
 
 const User = require('./models/userModel');
 const GeneralChat = require('./models/messageModel');
 
+const authController = require('./controllers/authController');
 
 const app = express();
 app.use(bodyParser.json());
-app.use(require('cors')());
+
+const cors = require('cors');
+app.use(cors());
+
 
 mongoose.connect('mongodb://127.0.0.1:27017/chatroom', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
 }).then(() => {
   console.log('Connected to MongoDB');
 }).catch(err => {
@@ -39,51 +40,11 @@ server.listen(5000, () => {
 
 
 // Registration endpoint
-app.post('/register', async (req, res) => {
-  try {
-    const { username, password } = req.body;
-    
-    // Check if the user already exists
-    const userExists = await User.findOne({ username });
-    if (userExists) {
-      return res.status(400).send('User already exists');
-    }
-
-    // Hash the password before saving the user
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = new User({ username, password: hashedPassword });
-
-    // Save the new user
-    await newUser.save();
-    res.status(201).send('User registered');
-  } catch (error) {
-    res.status(500).send('Error registering user');
-  }
-});
+// Registration endpoint
+app.post('/register', authController.register);
 
 // Login endpoint
-app.post('/login', async (req, res) => {
-  try {
-    const { username, password } = req.body;
-    
-    // Find the user by username
-    const user = await User.findOne({ username });
-    if (!user) {
-      return res.status(401).send('Invalid credentials');
-    }
-
-    // Compare the provided password with the stored hashed password
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(401).send('Invalid credentials');
-    }
-
-    // If login is successful, you might want to start a session or issue a token
-    res.status(200).send('Login successful');
-  } catch (error) {
-    res.status(500).send('Error logging in');
-  }
-});
+app.post('/login', authController.login);
 
 
 

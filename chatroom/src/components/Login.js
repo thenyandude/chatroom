@@ -17,17 +17,28 @@ function Login() {
         },
         body: JSON.stringify({ username, password }),
       });
-      if (response.ok) {
-        alert('Login successful');
-        localStorage.setItem('username', username); // Store username in local storage
-        navigate('/chat'); // Navigate to the chat page
-      } else {
-        alert('Invalid credentials');
+  
+      if (!response.ok) {
+        // If the HTTP status code is not OK, throw an error with the status text
+        throw new Error(`${response.status}: ${response.statusText}`);
       }
+  
+      // Parse the JSON response only once
+      const data = await response.json();
+      console.log('Login successful', data);
+  
+      // Proceed with login success logic, like storing the user and navigating
+      localStorage.setItem('username', username);
+      navigate('/chat');
+  
     } catch (error) {
+      // If an error occurs, log it and show an alert
       console.error('Error during login:', error);
+      alert('Error during login: ' + error.message);
     }
   };
+  
+  
 
   return (
     <div>

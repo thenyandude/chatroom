@@ -1,4 +1,3 @@
-// src/models/userModel.js
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 
@@ -7,17 +6,18 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: true }
 });
 
-// Before saving, hash the password
 userSchema.pre('save', async function(next) {
-  if (this.isModified('password') || this.isNew) {
-    this.password = await bcrypt.hash(this.password, 10);
+  try {
+    if (this.isModified('password') || this.isNew) {
+      const hashedPassword = await bcrypt.hash(this.password, 10);
+      this.password = hashedPassword;
+      console.log(`Password hashed for user '${this.username}': ${hashedPassword}`);
+    }
+    next();
+  } catch (error) {
+    console.error('Error hashing password:', error);
+    next(error);
   }
-  next();
 });
-
-// Method to check the password on login
-userSchema.methods.checkPassword = async function(candidatePassword) {
-  return await bcrypt.compare(candidatePassword, this.password);
-};
 
 module.exports = mongoose.model('User', userSchema);
