@@ -79,26 +79,29 @@ app.post('/rooms', async (req, res) => {
 // Corrected WebSocket server code
 const wss = new WebSocket.Server({ server });
 
-wss.on('connection', (ws) => {
-  let currentRoom = 'general'; // Default room
+// Mapping to keep track of each client's current room
+const clientRooms = new Map();
 
-  ws.on('message', (messageData) => {
+wss.on('connection', (ws) => {
+  clientRooms.set(ws, 'general'); // Default room
+
+  ws.on('message', async (messageData) => {
     const data = JSON.parse(messageData);
+
     if (data.type === 'joinRoom') {
-      currentRoom = data.room;
-      GeneralChat.find({ room: currentRoom }).sort({ timestamp: 1 })
-        .then(messages => {
-          ws.send(JSON.stringify({ type: 'roomMessages', messages }));
-        })
-        .catch(err => {
-          console.error('Failed to retrieve message history:', err);
-        });
+      // Update the client's current room
+      clientRooms.set(ws, data.room);
+      // Fetch and send all messages from the joined room
+      const roomMessages = await GeneralChat.find({ room: data.room }).sort({ timestamp: 1 });
+      ws.send(JSON.stringify({ type: 'roomMessages', messages: roomMessages }));
     } else if (data.type === 'message') {
-      const newMessage = new GeneralChat({ user: data.user, room: currentRoom, text: data.text });
+      const room = clientRooms.get(ws); // Get the sender's current room
+      const newMessage = new GeneralChat({ user: data.user, room: room, text: data.text });
       newMessage.save().then(savedMessage => {
-        wss.clients.forEach(client => {
-          if (client.readyState === WebSocket.OPEN && currentRoom === data.room) {
-            client.send(JSON.stringify({ type: 'newMessage', message: savedMessage }));
+        // Broadcast the message only to clients in the same room
+        clientRooms.forEach((value, key) => {
+          if (value === room && key.readyState === WebSocket.OPEN) {
+            key.send(JSON.stringify({ type: 'newMessage', message: savedMessage }));
           }
         });
       }).catch(err => console.error(err));
@@ -106,6 +109,7 @@ wss.on('connection', (ws) => {
   });
 
   ws.on('close', () => {
+    clientRooms.delete(ws); // Remove the client from the tracking map
     console.log('Client disconnected');
   });
 });

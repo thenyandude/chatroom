@@ -19,6 +19,15 @@ function App() {
     newSocket.onmessage = (event) => {
       const data = JSON.parse(event.data);
       if (data.type === 'roomMessages') {
+        setMessages(data.messages); // Set the messages in state
+      } else if (data.type === 'newMessage') {
+        setMessages((prevMessages) => [...prevMessages, data.message]);
+      }
+    };
+
+    newSocket.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === 'roomMessages') {
         setMessages(data.messages);
       } else if (data.type === 'newMessage') {
         setMessages((prevMessages) => [...prevMessages, data.message]);
