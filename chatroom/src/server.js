@@ -86,18 +86,23 @@ app.delete('/messages/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const username = req.body.username; // Username of the person deleting the message
+    const isAdmin = req.body.isAdmin; // Admin status of the user
 
-    if (message.user === "System") {
-      return res.status(403).send('Cannot delete system messages');
-    }
-
+    // First, find the message in the database
     const message = await Message.findById(id);
     if (!message) {
+      console.log('Message not found:', id);
       return res.status(404).send('Message not found');
     }
 
+    // Check if the message is a system message
+    if (message.user === "System") {
+      console.log('Cannot delete system messages');
+      return res.status(403).send('Cannot delete system messages');
+    }
+
     // Check if the user is the author of the message or an admin
-    if (message.user === username || req.body.isAdmin) {
+    if (message.user === username || isAdmin) {
       const updatedMessage = await Message.findByIdAndUpdate(id, {
         user: "System",
         text: `Message deleted by ${username}`,
@@ -111,14 +116,68 @@ app.delete('/messages/:id', async (req, res) => {
         }
       });
 
+      console.log('Message successfully deleted or updated:', updatedMessage);
       res.status(200).send('Message updated');
     } else {
+      console.log('Unauthorized deletion attempt by:', username);
       res.status(403).send('Unauthorized to delete this message');
     }
   } catch (error) {
+    console.error('Error in message deletion:', error);
     res.status(500).send('Error updating message');
   }
 });
+
+
+app.put('/messages/edit/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { text, username } = req.body;
+    // Ensure only the message owner or an admin can edit
+    const message = await Message.findById(id);
+
+    if (!message) {
+      return res.status(404).send('Message not found');
+    }
+
+    // Check if the user is the author of the message
+    if (message.user === username || req.body.isAdmin) {
+      const updatedMessage = await Message.findByIdAndUpdate(id, { 
+        text: text + ' (edited)', 
+        editedBy: username // Set the editedBy field
+      }, { new: true });
+
+      // Broadcast the updated message
+      clientRooms.forEach((room, client) => {
+        if (client.readyState === WebSocket.OPEN && room === message.room) {
+          client.send(JSON.stringify({ type: 'updateMessage', message: updatedMessage }));
+        }
+      });
+
+      res.status(200).json(updatedMessage);
+    } else {
+      res.status(403).send('Unauthorized to edit this message');
+    }
+  } catch (error) {
+    console.error('Error editing message:', error);
+    res.status(500).send('Error editing message');
+  }
+});
+
+
+
+app.put('/messages/edit/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { text, username } = req.body;
+    // Authorization checks should be here to ensure only the message owner or an admin can edit
+    const updatedMessage = await Message.findByIdAndUpdate(id, { text, editedBy: username }, { new: true });
+    res.json(updatedMessage);
+  } catch (error) {
+    res.status(500).send('Error editing message');
+  }
+});
+
 
 // WebSocket server
 // Corrected WebSocket server code

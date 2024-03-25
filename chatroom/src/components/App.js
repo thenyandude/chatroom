@@ -11,6 +11,9 @@ function App() {
   const [message, setMessage] = useState('');
   const [socket, setSocket] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [editingMessage, setEditingMessage] = useState(null);
+  const [editingText, setEditingText] = useState("");
+
 
   // WebSocket connection setup
   useEffect(() => {
@@ -71,16 +74,17 @@ function App() {
   }, []);
 
   const deleteMessage = async (messageId) => {
+    console.log(`Deleting message: ID=${messageId}, Username=${username}, isAdmin=${isAdmin}`);
     try {
       const response = await fetch(`http://localhost:5000/messages/${messageId}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
-          // Include other headers like authorization if needed
         },
         body: JSON.stringify({ username, isAdmin }) // Send username and isAdmin status
       });
       if (!response.ok) {
+        console.error('Failed to delete message:', response);
         throw new Error(`Failed to delete message: ${response.status} ${response.statusText}`);
       }
       setMessages(messages.filter(msg => msg._id !== messageId));
@@ -89,6 +93,36 @@ function App() {
       alert(error.message);
     }
   };
+  
+
+  const startEditing = (message) => {
+    if (message.user === username) {
+      setEditingMessage(message);
+      setEditingText(message.text);
+    }
+  };
+
+  const submitEdit = async (id, newText) => {
+    try {
+      const response = await fetch(`http://localhost:5000/messages/edit/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          // Include authorization headers if needed
+        },
+        body: JSON.stringify({ text: newText, username }),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to edit message');
+      }
+      const updatedMessage = await response.json();
+      setMessages(messages.map(msg => msg._id === id ? updatedMessage : msg));
+      setEditingMessage(null);
+    } catch (error) {
+      console.error('Error editing message:', error);
+    }
+  };
+
 
   return (
     <Router>
@@ -106,18 +140,41 @@ function App() {
                 ))}
               </select>
             <div>
-            {messages.map((msg, index) => (
-              <div key={index}>
-                <strong>{msg.user}: </strong>{msg.text}
-                {isAdmin && msg.user !== "System" && 
-                  <button onClick={() => deleteMessage(msg._id)}>Delete</button>
-                }
-                <br />
-                <small style={{ fontSize: '0.8em' }}>
-                  {new Date(msg.timestamp).toLocaleString()}
-                </small>
-              </div>
-            ))}
+            <div>
+            {
+  messages.map((msg, index) => (
+    <div key={index}>
+      <strong>{msg.user}: </strong>
+      {editingMessage && editingMessage._id === msg._id ? (
+        <>
+          <input
+            type="text"
+            value={editingText}
+            onChange={(e) => setEditingText(e.target.value)}
+          />
+          <button onClick={() => submitEdit(msg._id, editingText)}>Submit</button>
+        </>
+      ) : (
+        <>
+          <span>{msg.text}</span>
+          {msg.editedBy && <span style={{ fontSize: '0.8em', marginLeft: '5px' }}>(edited)</span>}
+          <br />
+          <small style={{ fontSize: '0.8em' }}>
+            {new Date(msg.timestamp).toLocaleString()}
+          </small>
+          {msg.user !== "System" && ((msg.user === username && !isAdmin) || isAdmin) && (
+            <>
+              {msg.user === username && <button onClick={() => startEditing(msg)}>Edit</button>}
+              <button onClick={() => deleteMessage(msg._id)}>Delete</button>
+            </>
+          )}
+        </>
+      )}
+    </div>
+  ))
+}
+
+    </div>
             </div>
               <input type="text" value={message} onChange={(e) => setMessage(e.target.value)} />
               <button onClick={sendMessage}>Send</button>
