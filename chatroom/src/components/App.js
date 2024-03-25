@@ -5,25 +5,17 @@ import Login from './Login';
 
 function App() {
   const [username, setUsername] = useState(localStorage.getItem('username') || '');
-  const [rooms, setRooms] = useState(['general']); // Default room list
+  const [rooms, setRooms] = useState(['general']);
   const [currentRoom, setCurrentRoom] = useState('general');
   const [messages, setMessages] = useState([]);
   const [message, setMessage] = useState('');
   const [socket, setSocket] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // WebSocket connection setup
   useEffect(() => {
     const newSocket = new WebSocket('ws://localhost:5000');
     setSocket(newSocket);
-
-    newSocket.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.type === 'roomMessages') {
-        setMessages(data.messages); // Set the messages in state
-      } else if (data.type === 'newMessage') {
-        setMessages((prevMessages) => [...prevMessages, data.message]);
-      }
-    };
 
     newSocket.onmessage = (event) => {
       const data = JSON.parse(event.data);
@@ -34,7 +26,6 @@ function App() {
       }
     };
 
-    // Join the default room on connection
     newSocket.onopen = () => {
       newSocket.send(JSON.stringify({ type: 'joinRoom', room: 'general' }));
     };
@@ -44,27 +35,51 @@ function App() {
 
   // Fetch the list of rooms
   useEffect(() => {
-    fetch('/rooms')
-      .then(response => response.json())
-      .then(  setRooms(['general', 'code', 'music', 'gaming']))
-      .catch(err => console.error('Error fetching rooms:', err));
+    fetch('http://localhost:5000/rooms')
+      .then((response) => response.json())
+      .then((data) => setRooms(data))
+      .catch((err) => console.error('Error fetching rooms:', err));
   }, []);
 
   const handleLogout = () => {
     setUsername('');
     localStorage.removeItem('username');
-    setCurrentRoom('general'); // Reset room on logout
+    localStorage.removeItem('isAdmin');
+    setCurrentRoom('general');
   };
 
   const handleRoomChange = (newRoom) => {
     setCurrentRoom(newRoom);
-    setMessages([]); // Clear messages when switching rooms
+    setMessages([]);
     socket.send(JSON.stringify({ type: 'joinRoom', room: newRoom }));
   };
 
   const sendMessage = () => {
     socket.send(JSON.stringify({ type: 'message', room: currentRoom, user: username, text: message }));
     setMessage('');
+  };
+
+  // Admin code
+  useEffect(() => {
+    setIsAdmin(localStorage.getItem('isAdmin') === 'true');
+  }, []);
+
+  const deleteMessage = async (messageId) => {
+    try {
+      const response = await fetch(`http://localhost:5000/messages/${messageId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      if (!response.ok) {
+        throw new Error(`Failed to delete message: ${response.status} ${response.statusText}`);
+      }
+      setMessages(messages.filter((msg) => msg._id !== messageId));
+    } catch (error) {
+      console.error('Failed to delete message:', error);
+      alert('Failed to delete message:', error.message);
+    }
   };
 
   return (
@@ -78,17 +93,19 @@ function App() {
             <>
               <p>Welcome, {username}! <button onClick={handleLogout}>Logout</button></p>
               <select onChange={(e) => handleRoomChange(e.target.value)} value={currentRoom}>
-  {rooms.map(room => (
-    <option key={room} value={room}>{room}</option>
-  ))}
-</select>
-
+                {rooms.map((room) => (
+                  <option key={room} value={room}>{room}</option>
+                ))}
+              </select>
               <div>
                 {messages.map((msg, index) => (
                   <div key={index}>
                     <strong>{msg.user}: </strong>{msg.text}
+                    {isAdmin && <button onClick={() => deleteMessage(msg._id)}>Delete</button>}
                     <br />
-                    <small>{new Date(msg.timestamp).toLocaleString()}</small>
+                    <small style={{ fontSize: '0.8em' }}>
+                      {new Date(msg.timestamp).toLocaleString()}
+                    </small>
                   </div>
                 ))}
               </div>

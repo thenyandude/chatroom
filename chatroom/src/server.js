@@ -6,9 +6,10 @@ const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const authRoutes = require('./routes/authRoutes');
 const chatRoutes = require('./routes/chatRoutes');
+const userRoutes = require('./routes/userRoutes.js');
 
-const User = require('./models/userModel');
-const GeneralChat = require('./models/messageModel');
+
+const Message = require('./models/messageModel');
 
 const authController = require('./controllers/authController');
 
@@ -17,6 +18,8 @@ app.use(bodyParser.json());
 
 const cors = require('cors');
 app.use(cors());
+
+app.use('/user', userRoutes);
 
 
 mongoose.connect('mongodb://127.0.0.1:27017/chatroom', {
@@ -44,6 +47,7 @@ app.post('/register', authController.register);
 
 // Login endpoint
 app.post('/login', authController.login);
+
 
 
 // Get all rooms
@@ -75,6 +79,20 @@ app.post('/rooms', async (req, res) => {
   res.status(201).json({ message: `Room ${roomName} created` });
 });
 
+
+//Admin code
+
+app.delete('/messages/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    // Add authorization checks as necessary
+    await Message.findByIdAndDelete(id);
+    res.status(200).send('Message deleted');
+  } catch (error) {
+    res.status(500).send('Error deleting message');
+  }
+});
+
 // WebSocket server
 // Corrected WebSocket server code
 const wss = new WebSocket.Server({ server });
@@ -92,19 +110,23 @@ wss.on('connection', (ws) => {
       // Update the client's current room
       clientRooms.set(ws, data.room);
       // Fetch and send all messages from the joined room
-      const roomMessages = await GeneralChat.find({ room: data.room }).sort({ timestamp: 1 });
+      const roomMessages = await Message.find({ room: data.room }).sort({ timestamp: 1 });
       ws.send(JSON.stringify({ type: 'roomMessages', messages: roomMessages }));
     } else if (data.type === 'message') {
-      const room = clientRooms.get(ws); // Get the sender's current room
-      const newMessage = new GeneralChat({ user: data.user, room: room, text: data.text });
-      newMessage.save().then(savedMessage => {
-        // Broadcast the message only to clients in the same room
-        clientRooms.forEach((value, key) => {
-          if (value === room && key.readyState === WebSocket.OPEN) {
-            key.send(JSON.stringify({ type: 'newMessage', message: savedMessage }));
-          }
-        });
-      }).catch(err => console.error(err));
+      // Create a new message in the current room
+      const newMessage = new Message({
+        user: data.user,
+        room: clientRooms.get(ws),
+        text: data.text
+      });
+      
+      await newMessage.save();
+
+      wss.clients.forEach(client => {
+        if (clientRooms.get(client) === clientRooms.get(ws) && client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify({ type: 'newMessage', message: newMessage }));
+        }
+      });
     }
   });
 
@@ -113,3 +135,6 @@ wss.on('connection', (ws) => {
     console.log('Client disconnected');
   });
 });
+
+
+module.exports = app;

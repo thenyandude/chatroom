@@ -1,44 +1,35 @@
 // src/Login.js
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate instead of useHistory
+import { useNavigate } from 'react-router-dom';
+const Message = require('../models/messageModel'); // Assuming your model file is named messageModel.js
 
 function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const navigate = useNavigate(); // useNavigate hook for navigation
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       const response = await fetch('http://localhost:5000/login', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),
       });
-  
-      if (!response.ok) {
-        // If the HTTP status code is not OK, throw an error with the status text
-        throw new Error(`${response.status}: ${response.statusText}`);
-      }
-  
-      // Parse the JSON response only once
+
       const data = await response.json();
-      console.log('Login successful', data);
-  
-      // Proceed with login success logic, like storing the user and navigating
+      if (!response.ok) {
+        throw new Error(data.message || 'Login failed');
+      }
+
       localStorage.setItem('username', username);
+      localStorage.setItem('isAdmin', data.isAdmin); // Assuming isAdmin is sent from the server
       navigate('/chat');
-  
     } catch (error) {
-      // If an error occurs, log it and show an alert
       console.error('Error during login:', error);
-      alert('Error during login: ' + error.message);
+      alert('Error during login:', error.message);
     }
   };
-  
-  
 
   return (
     <div>
