@@ -85,11 +85,38 @@ app.post('/rooms', async (req, res) => {
 app.delete('/messages/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    // Add authorization checks as necessary
-    await Message.findByIdAndDelete(id);
-    res.status(200).send('Message deleted');
+    const username = req.body.username; // Username of the person deleting the message
+
+    if (message.user === "System") {
+      return res.status(403).send('Cannot delete system messages');
+    }
+
+    const message = await Message.findById(id);
+    if (!message) {
+      return res.status(404).send('Message not found');
+    }
+
+    // Check if the user is the author of the message or an admin
+    if (message.user === username || req.body.isAdmin) {
+      const updatedMessage = await Message.findByIdAndUpdate(id, {
+        user: "System",
+        text: `Message deleted by ${username}`,
+        isDeleted: true
+      }, { new: true });
+
+      // Broadcast the updated message
+      clientRooms.forEach((room, client) => {
+        if (client.readyState === WebSocket.OPEN && room === message.room) {
+          client.send(JSON.stringify({ type: 'updateMessage', message: updatedMessage }));
+        }
+      });
+
+      res.status(200).send('Message updated');
+    } else {
+      res.status(403).send('Unauthorized to delete this message');
+    }
   } catch (error) {
-    res.status(500).send('Error deleting message');
+    res.status(500).send('Error updating message');
   }
 });
 

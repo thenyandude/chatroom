@@ -1,7 +1,6 @@
 // src/Login.js
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-const Message = require('../models/messageModel'); // Assuming your model file is named messageModel.js
 
 function Login() {
   const [username, setUsername] = useState('');

@@ -23,6 +23,12 @@ function App() {
         setMessages(data.messages);
       } else if (data.type === 'newMessage') {
         setMessages((prevMessages) => [...prevMessages, data.message]);
+      } else if (data.type === 'updateMessage') {
+        setMessages((prevMessages) =>
+          prevMessages.map((msg) =>
+            msg._id === data.message._id ? data.message : msg
+          )
+        );
       }
     };
 
@@ -70,15 +76,17 @@ function App() {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
+          // Include other headers like authorization if needed
         },
+        body: JSON.stringify({ username, isAdmin }) // Send username and isAdmin status
       });
       if (!response.ok) {
         throw new Error(`Failed to delete message: ${response.status} ${response.statusText}`);
       }
-      setMessages(messages.filter((msg) => msg._id !== messageId));
+      setMessages(messages.filter(msg => msg._id !== messageId));
     } catch (error) {
-      console.error('Failed to delete message:', error);
-      alert('Failed to delete message:', error.message);
+      console.error(error.message);
+      alert(error.message);
     }
   };
 
@@ -97,18 +105,20 @@ function App() {
                   <option key={room} value={room}>{room}</option>
                 ))}
               </select>
-              <div>
-                {messages.map((msg, index) => (
-                  <div key={index}>
-                    <strong>{msg.user}: </strong>{msg.text}
-                    {isAdmin && <button onClick={() => deleteMessage(msg._id)}>Delete</button>}
-                    <br />
-                    <small style={{ fontSize: '0.8em' }}>
-                      {new Date(msg.timestamp).toLocaleString()}
-                    </small>
-                  </div>
-                ))}
+            <div>
+            {messages.map((msg, index) => (
+              <div key={index}>
+                <strong>{msg.user}: </strong>{msg.text}
+                {isAdmin && msg.user !== "System" && 
+                  <button onClick={() => deleteMessage(msg._id)}>Delete</button>
+                }
+                <br />
+                <small style={{ fontSize: '0.8em' }}>
+                  {new Date(msg.timestamp).toLocaleString()}
+                </small>
               </div>
+            ))}
+            </div>
               <input type="text" value={message} onChange={(e) => setMessage(e.target.value)} />
               <button onClick={sendMessage}>Send</button>
             </>
