@@ -143,8 +143,9 @@ app.put('/messages/edit/:id', async (req, res) => {
     // Check if the user is the author of the message
     if (message.user === username || req.body.isAdmin) {
       const updatedMessage = await Message.findByIdAndUpdate(id, { 
-        text: text + ' (edited)', 
-        editedBy: username // Set the editedBy field
+        text: text, 
+        editedBy: username, 
+        isEdited: true 
       }, { new: true });
 
       // Broadcast the updated message

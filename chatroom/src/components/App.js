@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import '../App.css'
 import Register from './Register';
 import Login from './Login';
 
@@ -116,8 +117,8 @@ function App() {
         throw new Error('Failed to edit message');
       }
       const updatedMessage = await response.json();
-      setMessages(messages.map(msg => msg._id === id ? updatedMessage : msg));
-      setEditingMessage(null);
+  setMessages(messages.map(msg => msg._id === id ? {...updatedMessage, isEdited: true} : msg));
+  setEditingMessage(null);
     } catch (error) {
       console.error('Error editing message:', error);
     }
@@ -157,8 +158,8 @@ function App() {
       ) : (
         <>
           <span>{msg.text}</span>
-          {msg.editedBy && <span style={{ fontSize: '0.8em', marginLeft: '5px' }}>(edited)</span>}
-          <br />
+          {msg.isEdited && <span className="edited-indicator">(edited)</span>}
+          <br></br>
           <small style={{ fontSize: '0.8em' }}>
             {new Date(msg.timestamp).toLocaleString()}
           </small>

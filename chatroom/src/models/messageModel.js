@@ -5,7 +5,9 @@ const messageSchema = new mongoose.Schema({
   user: String,
   text: String,
   room: { type: String, required: true },
-  timestamp: { type: Date, default: Date.now }
+  timestamp: { type: Date, default: Date.now },
+  isEdited: { type: Boolean, default: false } ,
+  editedBy: String
 });
 
 module.exports = mongoose.model('Message', messageSchema, 'chats');
