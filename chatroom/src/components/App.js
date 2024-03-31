@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate} from 'react-router-dom';
 import '../App.css'
 import Register from './Register';
 import Login from './Login';
+import UserSettings from './UserSettings';
+import NavigationButton from './NavigationButton'; // Adjust the path as per your directory structure
+
 
 function App() {
   const [username, setUsername] = useState(localStorage.getItem('username') || '');
@@ -125,12 +128,15 @@ function App() {
   };
 
 
+
   return (
     <Router>
       <Routes>
         <Route path="/" element={<Navigate replace to="/register" />} />
         <Route path="/register" element={username ? <Navigate replace to="/chat" /> : <Register />} />
         <Route path="/login" element={username ? <Navigate replace to="/chat" /> : <Login onLogin={setUsername} />} />
+        <Route path="/settings" element={<UserSettings />} />
+
         <Route path="/chat" element={
           username ? (
             <>
@@ -179,6 +185,7 @@ function App() {
             </div>
               <input type="text" value={message} onChange={(e) => setMessage(e.target.value)} />
               <button onClick={sendMessage}>Send</button>
+              <NavigationButton pathToNavigateTo="/settings" buttonText="To Settings" />       
             </>
           ) : (
             <Navigate replace to="/login" />

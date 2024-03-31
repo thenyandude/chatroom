@@ -5,7 +5,9 @@ const userSchema = new mongoose.Schema({
   username: { type: String, unique: true, required: true },
   password: { type: String, required: true },
   isAdmin: { type: Boolean, default: false },
-  isBanned: {type: Boolean, default: false}
+  isBanned: {type: Boolean, default: false},
+  profilePicture: {type: String, default: "test1.png"},
+  usernameColor: {type: String, default : "#000000"}
 });
 
 userSchema.pre('save', async function(next) {

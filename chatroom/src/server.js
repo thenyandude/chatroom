@@ -1,5 +1,6 @@
 // src/server.js
 const express = require('express');
+const path = require('path');
 const http = require('http');
 const WebSocket = require('ws');
 const bodyParser = require('body-parser');
@@ -7,6 +8,8 @@ const mongoose = require('mongoose');
 const authRoutes = require('./routes/authRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 const userRoutes = require('./routes/userRoutes.js');
+require('dotenv').config();
+
 
 
 const Message = require('./models/messageModel');
@@ -17,10 +20,10 @@ const app = express();
 app.use(bodyParser.json());
 
 const cors = require('cors');
-app.use(cors());
+app.use(cors({ origin: 'http://localhost:3000', credentials: true }));
 
-app.use('/user', userRoutes);
 
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 mongoose.connect('mongodb://127.0.0.1:27017/chatroom', {
 }).then(() => {
@@ -33,6 +36,8 @@ mongoose.connect('mongodb://127.0.0.1:27017/chatroom', {
 // Use the auth and chat routes
 app.use('/auth', authRoutes);
 app.use('/chat', chatRoutes);
+app.use('/user', userRoutes);
+
 
 // ...WebSocket setup and other middleware...
 
@@ -165,19 +170,25 @@ app.put('/messages/edit/:id', async (req, res) => {
   }
 });
 
+//settings
 
 
-app.put('/messages/edit/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { text, username } = req.body;
-    // Authorization checks should be here to ensure only the message owner or an admin can edit
-    const updatedMessage = await Message.findByIdAndUpdate(id, { text, editedBy: username }, { new: true });
-    res.json(updatedMessage);
-  } catch (error) {
-    res.status(500).send('Error editing message');
-  }
+app.get('/available-profile-pictures', (req, res) => {
+  const fs = require('fs');
+  const uploadsDir = path.join(__dirname, 'uploads');
+
+  fs.readdir(uploadsDir, (err, files) => {
+    if (err) {
+      console.error('Could not list the directory.', err);
+      return res.status(500).json({ error: err.message });
+    }
+
+    // Filter files to include only .png images
+    const imageFiles = files.filter(file => file.endsWith('.png'));
+    res.json(imageFiles);
+  });
 });
+
 
 
 // WebSocket server
