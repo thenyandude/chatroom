@@ -51,18 +51,21 @@ function App() {
 
   useEffect(() => {
     if (username) {
-      fetch(`http://localhost:5000/user/${username}/settings`) // Your endpoint might differ
-        .then((response) => response.json())
-        .then((data) => {
-          setUserProfilePicture(data.profilePicture);
-          setUsernameColor(data.usernameColor);
-          // Optionally save to local storage if needed
-          localStorage.setItem('userProfilePicture', data.profilePicture);
-          localStorage.setItem('usernameColor', data.usernameColor);
-        })
-        .catch((error) => console.error('Error fetching user settings:', error));
+      fetch(`http://localhost:5000/user/${username}/settings`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        }
+      })
+      .then((response) => response.json())
+      .then((data) => {
+        setUserProfilePicture(data.profilePicture);
+        setUsernameColor(data.usernameColor);
+        localStorage.setItem('userProfilePicture', data.profilePicture);
+        localStorage.setItem('usernameColor', data.usernameColor);
+      })
+      .catch((error) => console.error('Error fetching user settings:', error));
     }
-  }, [username]); // Fetch when username is set or changed
+  }, [username]);
 
   // Fetch the list of rooms
   useEffect(() => {
@@ -111,7 +114,6 @@ function App() {
   }, []);
 
   const deleteMessage = async (messageId) => {
-    console.log(`Deleting message: ID=${messageId}, Username=${username}, isAdmin=${isAdmin}`);
     try {
       const response = await fetch(`http://localhost:5000/messages/${messageId}`, {
         method: 'DELETE',
@@ -171,59 +173,66 @@ function App() {
         <Route path="/settings" element={<UserSettings />} />
 
         <Route path="/chat" element={
-          username ? (
-            <>
-              <p>Welcome, {username}! <button onClick={handleLogout}>Logout</button></p>
-              <select onChange={(e) => handleRoomChange(e.target.value)} value={currentRoom}>
+    username ? (
+        <>
+            <p>Welcome, {username}! <button onClick={handleLogout}>Logout</button></p>
+            <select onChange={(e) => handleRoomChange(e.target.value)} value={currentRoom}>
                 {rooms.map((room) => (
-                  <option key={room} value={room}>{room}</option>
+                    <option key={room} value={room}>{room}</option>
                 ))}
-              </select>
-            <div>
-            <div>
-            {
-  messages.map((msg, index) => (
-    <div key={index}>
-      <strong>{msg.user}: </strong>
-      {editingMessage && editingMessage._id === msg._id ? (
-        <>
-          <input
-            type="text"
-            value={editingText}
-            onChange={(e) => setEditingText(e.target.value)}
-          />
-          <button onClick={() => submitEdit(msg._id, editingText)}>Submit</button>
-        </>
-      ) : (
-        <>
-          <span>{msg.text}</span>
-          {msg.isEdited && <span className="edited-indicator">(edited)</span>}
-          <br></br>
-          <small style={{ fontSize: '0.8em' }}>
-            {new Date(msg.timestamp).toLocaleString()}
-          </small>
-          {msg.user !== "System" && ((msg.user === username && !isAdmin) || isAdmin) && (
+            </select>
+            <div className='message-container'>
+            {messages.map((msg, index) => (
+    <div key={index} className="message">
+        <img 
+            src={`http://localhost:5000/uploads/${msg.userProfilePicture}`} 
+            alt="Profile" 
+            className="profile-picture"
+        />
+        <strong style={{ color: msg.usernameColor }}>{msg.user}: </strong>
+        {editingMessage && editingMessage._id === msg._id ? (
             <>
-              {msg.user === username && <button onClick={() => startEditing(msg)}>Edit</button>}
-              <button onClick={() => deleteMessage(msg._id)}>Delete</button>
+                <input
+                    type="text"
+                    value={editingText}
+                    onChange={(e) => setEditingText(e.target.value)}
+                />
+                <button onClick={() => submitEdit(msg._id, editingText)}>Submit</button>
             </>
-          )}
-        </>
-      )}
+        ) : (
+            <>
+                <span>{msg.text}</span>
+                {msg.isEdited && <span className="edited-indicator">(edited)</span>}
+                <br />
+                <small>{new Date(msg.timestamp).toLocaleString()}</small>
+                {msg.user !== "System" && ((msg.user === username && !isAdmin) || isAdmin) && (
+                    <>
+                        {msg.user === username && <button onClick={() => startEditing(msg)}>Edit</button>}
+                        <button onClick={() => deleteMessage(msg._id)}>Delete</button>
+                    </>
+                )}
+            </>
+        )}
     </div>
-  ))
-}
+))}
 
-    </div>
             </div>
-              <input type="text" value={message} onChange={(e) => setMessage(e.target.value)} />
-              <button onClick={sendMessage}>Send</button>
-              <NavigationButton pathToNavigateTo="/settings" buttonText="To Settings" />       
-            </>
-          ) : (
-            <Navigate replace to="/login" />
-          )
-        } />
+            <div className="message-input">
+                <input 
+                    type="text" 
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    placeholder="Type a message" 
+                />
+                <button onClick={sendMessage}>Send</button>
+            </div>
+            <NavigationButton pathToNavigateTo="/settings" buttonText="To Settings" />       
+        </>
+    ) : (
+        <Navigate replace to="/login" />
+    )
+} />
+
       </Routes>
     </Router>
   );

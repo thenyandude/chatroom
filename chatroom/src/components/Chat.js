@@ -20,6 +20,7 @@ function Chat({
     setEditingText, 
     editingText 
 }) {
+    
     return (
         <>
             <p>Welcome, {username}! <button onClick={handleLogout}>Logout</button></p>
@@ -29,10 +30,15 @@ function Chat({
                 ))}
             </select>
             <div className='message-container'>
-            { messages.map((msg, index) => (
-                <div key={index}>
-                <img src={`http://localhost:5000/uploads/${msg.userProfilePicture}`} alt="Profile" className="profile-picture"/>
-                <strong style={{ color: msg.usernameColor }}>{msg.user}: </strong>
+                {messages.map((msg, index) => (
+                    <div key={index} className="message" style={{color: msg.usernameColor}}>
+                        <img 
+                            src={`http://localhost:5000/uploads/${msg.userProfilePicture}`} 
+                            alt="Profile" 
+                            className="profile-picture"
+                            style={{ borderColor: msg.usernameColor }} // If you want to apply color to the border
+                        />
+                        <strong>{msg.user}: </strong>
                         {editingMessage && editingMessage._id === msg._id ? (
                             <>
                                 <input

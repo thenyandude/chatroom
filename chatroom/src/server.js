@@ -13,6 +13,7 @@ require('dotenv').config();
 
 
 const Message = require('./models/messageModel');
+const User = require('./models/userModel');
 
 const authController = require('./controllers/authController');
 
@@ -207,24 +208,47 @@ wss.on('connection', (ws) => {
     if (data.type === 'joinRoom') {
       // Update the client's current room
       clientRooms.set(ws, data.room);
+
       // Fetch and send all messages from the joined room
       const roomMessages = await Message.find({ room: data.room }).sort({ timestamp: 1 });
+
       ws.send(JSON.stringify({ type: 'roomMessages', messages: roomMessages }));
     } else if (data.type === 'message') {
       // Create a new message in the current room
-      const newMessage = new Message({
-        user: data.user,
-        room: clientRooms.get(ws),
-        text: data.text
-      });
-      
-      await newMessage.save();
-
-      wss.clients.forEach(client => {
-        if (clientRooms.get(client) === clientRooms.get(ws) && client.readyState === WebSocket.OPEN) {
-          client.send(JSON.stringify({ type: 'newMessage', message: newMessage }));
+      try {
+        const user = await User.findOne({ username: data.user }); // Find the user by username
+        if (!user) {
+          throw new Error('User not found');
         }
-      });
+
+        const newMessage = new Message({
+          user: user.username,
+          userProfilePicture: user.profilePicture, // Assuming these fields exist on the User model
+          usernameColor: user.usernameColor,
+          text: data.text,
+          room: clientRooms.get(ws),
+        });
+
+        await newMessage.save();
+
+        // Prepare the message to send, including the user's picture and color
+        const messageToSend = {
+          ...newMessage.toObject(),
+          userProfilePicture: user.profilePicture,
+          usernameColor: user.usernameColor
+        };
+
+        // Broadcast the new message to all clients in the same room
+        wss.clients.forEach(client => {
+          if (clientRooms.get(client) === clientRooms.get(ws) && client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify({ type: 'newMessage', message: messageToSend }));
+          }
+        });
+
+      } catch (error) {
+        console.error('Error handling message event:', error);
+        // Handle errors, e.g., send a message back to the client
+      }
     }
   });
 
@@ -233,6 +257,7 @@ wss.on('connection', (ws) => {
     console.log('Client disconnected');
   });
 });
+
 
 
 module.exports = app;
