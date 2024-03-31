@@ -75,32 +75,35 @@ function UserSettings() {
   // Fetch user settings whenever token changes
   useEffect(() => {
     const fetchUserSettings = async () => {
+      if (!token) {
+        console.error('No token available');
+        return;
+      }
+  
       try {
-        if (!token) {
-          console.error('No token available');
-          return;
-        }
-
-        const response = await fetch('http://localhost:5000/user/getSettings', {
+        const username = localStorage.getItem('username'); // Assuming username is stored in localStorage
+        const response = await fetch(`http://localhost:5000/user/${username}/settings`, {
           headers: {
-            'Authorization': `Bearer ${token}`
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
           }
         });
+  
         if (!response.ok) {
           throw new Error('Failed to fetch settings');
         }
         const data = await response.json();
         setUsernameColor(data.usernameColor);
-        setPreviewImage(data.profilePicture);
+        setPreviewImage(`http://localhost:5000/uploads/${data.profilePicture}`);
         console.log("Fetched settings:", data);
       } catch (error) {
         console.error('Error fetching settings:', error);
       }
     };
-
+  
     fetchUserSettings();
   }, [token]);
-
+  
   return (
     <form onSubmit={handleSubmit}>
       {previewImage && (

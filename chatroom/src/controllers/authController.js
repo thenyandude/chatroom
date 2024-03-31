@@ -46,7 +46,6 @@ exports.register = async (req, res) => {
 };
 
 // User Login
-// User Login
 exports.login = async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -96,6 +95,7 @@ exports.protect = async (req, res, next) => {
       token = req.headers.authorization.split(' ')[1];
       console.log('Received token:', token); // Log the received token
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      req.user = await User.findById(decoded.id).select('-password');
       console.log('Decoded token:', decoded); // Log the decoded token
       req.user = await User.findById(decoded.id).select('-password'); // Exclude password
       next();

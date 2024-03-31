@@ -28,15 +28,11 @@ function Chat({
                     <option key={room} value={room}>{room}</option>
                 ))}
             </select>
-
-            <div className="message-container">
-                {messages.map((msg, index) => (
-                    <div key={index} className="message">
-                        {msg.userProfilePicture && (
-                            <img src={msg.userProfilePicture} alt={msg.user} className="profile-picture" />
-                        )}
-                        <strong style={{ color: msg.usernameColor }}>{msg.user}:</strong>
-
+            <div className='message-container'>
+            { messages.map((msg, index) => (
+                <div key={index}>
+                <img src={`http://localhost:5000/uploads/${msg.userProfilePicture}`} alt="Profile" className="profile-picture"/>
+                <strong style={{ color: msg.usernameColor }}>{msg.user}: </strong>
                         {editingMessage && editingMessage._id === msg._id ? (
                             <>
                                 <input

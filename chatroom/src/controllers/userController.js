@@ -39,10 +39,10 @@ exports.deleteMessage = async (req, res) => {
 
 exports.updateSettings = async (req, res) => {
   try {
-    const { username, profilePicture, usernameColor } = req.body;
+    const { profilePicture, usernameColor } = req.body;
 
-    // Find the user in the database
-    const user = await User.findOne({ username: username });
+    // Find the user in the database by id instead of username
+    const user = await User.findById(req.user.id);
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
@@ -68,24 +68,20 @@ exports.updateSettings = async (req, res) => {
 };
 
 
-
+// src/controllers/userController.js
 exports.getSettings = async (req, res) => {
   try {
-    // Assuming you're storing the authenticated user's username on req.user.name
-    const username = req.user.name;
-
-    const user = await User.findOne({ username: username });
+    const username = req.params.username;
+    const user = await User.findOne({ username: username }, 'profilePicture usernameColor -_id');
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-
-    res.status(200).json({
-      profilePicture: user.profilePicture,
-      usernameColor: user.usernameColor,
-    });
-    
+    res.status(200).json(user);
   } catch (error) {
-    console.error('Error fetching user settings:', error);
     res.status(500).json({ message: 'Error fetching user settings' });
   }
 };
+
+
+
+

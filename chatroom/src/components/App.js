@@ -17,6 +17,9 @@ function App() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [editingMessage, setEditingMessage] = useState(null);
   const [editingText, setEditingText] = useState("");
+  const [userProfilePicture, setUserProfilePicture] = useState(localStorage.getItem('userProfilePicture') || '');
+ const [usernameColor, setUsernameColor] = useState(localStorage.getItem('usernameColor') || '#000000'); // Default to black
+
 
 
   // WebSocket connection setup
@@ -46,6 +49,21 @@ function App() {
     return () => newSocket.close();
   }, []);
 
+  useEffect(() => {
+    if (username) {
+      fetch(`http://localhost:5000/user/${username}/settings`) // Your endpoint might differ
+        .then((response) => response.json())
+        .then((data) => {
+          setUserProfilePicture(data.profilePicture);
+          setUsernameColor(data.usernameColor);
+          // Optionally save to local storage if needed
+          localStorage.setItem('userProfilePicture', data.profilePicture);
+          localStorage.setItem('usernameColor', data.usernameColor);
+        })
+        .catch((error) => console.error('Error fetching user settings:', error));
+    }
+  }, [username]); // Fetch when username is set or changed
+
   // Fetch the list of rooms
   useEffect(() => {
     fetch('http://localhost:5000/rooms')
@@ -56,10 +74,15 @@ function App() {
 
   const handleLogout = () => {
     setUsername('');
+    setUserProfilePicture('');
+    setUsernameColor('#000000'); // Reset to default color
     localStorage.removeItem('username');
+    localStorage.removeItem('userProfilePicture');
+    localStorage.removeItem('usernameColor');
     localStorage.removeItem('isAdmin');
     setCurrentRoom('general');
   };
+  
 
   const handleRoomChange = (newRoom) => {
     setCurrentRoom(newRoom);
@@ -68,9 +91,19 @@ function App() {
   };
 
   const sendMessage = () => {
-    socket.send(JSON.stringify({ type: 'message', room: currentRoom, user: username, text: message }));
-    setMessage('');
-  };
+    if (socket) {
+      const messageToSend = {
+        type: 'message',
+        room: currentRoom,
+        user: username,
+        userProfilePicture, // This is now available from the state
+        usernameColor, // This is now available from the state
+        text: message,
+      };
+      socket.send(JSON.stringify(messageToSend));
+      setMessage('');
+    }
+  };  
 
   // Admin code
   useEffect(() => {

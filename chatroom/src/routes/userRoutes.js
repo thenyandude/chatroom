@@ -16,7 +16,7 @@ router.put('/updateSettings', authController.protect, userController.updateSetti
 // Route to get user settings, any authenticated user can access
 router.get('/getSettings', authController.protect, userController.getSettings);
 
-module.exports = router;
-
+// In userRoutes.js or a similar file
+router.get('/:username/settings', authController.protect, userController.getSettings);
 
 module.exports = router;
