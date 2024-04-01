@@ -1,10 +1,10 @@
-// src/Login.js
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -23,16 +23,19 @@ function Login() {
 
       localStorage.setItem('username', username);
       localStorage.setItem('isAdmin', data.isAdmin); // Assuming isAdmin is sent from the server
+      localStorage.setItem('token', data.token); // Assuming isAdmin is sent from the server
+
       navigate('/chat');
     } catch (error) {
       console.error('Error during login:', error);
-      alert('Error during login:', error.message);
+      setError(error.message || 'An error occurred during login');
     }
   };
 
   return (
     <div>
       <h2>Login</h2>
+      {error && <p style={{ color: 'red' }}>{error}</p>}
       <form onSubmit={handleSubmit}>
         <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Username" />
         <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" />
@@ -40,7 +43,6 @@ function Login() {
       </form>
 
       <button onClick={() => navigate('/register')}>Need an account?</button>
-
     </div>
   );
 }

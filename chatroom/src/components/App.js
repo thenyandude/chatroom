@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate} from 'react-router-dom';
 import '../App.css'
 import Register from './Register';
 import Login from './Login';
+import UserSettings from './UserSettings';
+import NavigationButton from './NavigationButton'; // Adjust the path as per your directory structure
+
 
 function App() {
   const [username, setUsername] = useState(localStorage.getItem('username') || '');
@@ -14,6 +17,9 @@ function App() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [editingMessage, setEditingMessage] = useState(null);
   const [editingText, setEditingText] = useState("");
+  const [userProfilePicture, setUserProfilePicture] = useState(localStorage.getItem('userProfilePicture') || '');
+ const [usernameColor, setUsernameColor] = useState(localStorage.getItem('usernameColor') || '#000000'); // Default to black
+
 
 
   // WebSocket connection setup
@@ -43,6 +49,24 @@ function App() {
     return () => newSocket.close();
   }, []);
 
+  useEffect(() => {
+    if (username) {
+      fetch(`http://localhost:5000/user/${username}/settings`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        }
+      })
+      .then((response) => response.json())
+      .then((data) => {
+        setUserProfilePicture(data.profilePicture);
+        setUsernameColor(data.usernameColor);
+        localStorage.setItem('userProfilePicture', data.profilePicture);
+        localStorage.setItem('usernameColor', data.usernameColor);
+      })
+      .catch((error) => console.error('Error fetching user settings:', error));
+    }
+  }, [username]);
+
   // Fetch the list of rooms
   useEffect(() => {
     fetch('http://localhost:5000/rooms')
@@ -53,10 +77,15 @@ function App() {
 
   const handleLogout = () => {
     setUsername('');
+    setUserProfilePicture('');
+    setUsernameColor('#000000'); // Reset to default color
     localStorage.removeItem('username');
+    localStorage.removeItem('userProfilePicture');
+    localStorage.removeItem('usernameColor');
     localStorage.removeItem('isAdmin');
     setCurrentRoom('general');
   };
+  
 
   const handleRoomChange = (newRoom) => {
     setCurrentRoom(newRoom);
@@ -65,9 +94,19 @@ function App() {
   };
 
   const sendMessage = () => {
-    socket.send(JSON.stringify({ type: 'message', room: currentRoom, user: username, text: message }));
-    setMessage('');
-  };
+    if (socket) {
+      const messageToSend = {
+        type: 'message',
+        room: currentRoom,
+        user: username,
+        userProfilePicture, // This is now available from the state
+        usernameColor, // This is now available from the state
+        text: message,
+      };
+      socket.send(JSON.stringify(messageToSend));
+      setMessage('');
+    }
+  };  
 
   // Admin code
   useEffect(() => {
@@ -75,7 +114,6 @@ function App() {
   }, []);
 
   const deleteMessage = async (messageId) => {
-    console.log(`Deleting message: ID=${messageId}, Username=${username}, isAdmin=${isAdmin}`);
     try {
       const response = await fetch(`http://localhost:5000/messages/${messageId}`, {
         method: 'DELETE',
@@ -125,65 +163,76 @@ function App() {
   };
 
 
+
   return (
     <Router>
       <Routes>
         <Route path="/" element={<Navigate replace to="/register" />} />
         <Route path="/register" element={username ? <Navigate replace to="/chat" /> : <Register />} />
         <Route path="/login" element={username ? <Navigate replace to="/chat" /> : <Login onLogin={setUsername} />} />
-        <Route path="/chat" element={
-          username ? (
-            <>
-              <p>Welcome, {username}! <button onClick={handleLogout}>Logout</button></p>
-              <select onChange={(e) => handleRoomChange(e.target.value)} value={currentRoom}>
-                {rooms.map((room) => (
-                  <option key={room} value={room}>{room}</option>
-                ))}
-              </select>
-            <div>
-            <div>
-            {
-  messages.map((msg, index) => (
-    <div key={index}>
-      <strong>{msg.user}: </strong>
-      {editingMessage && editingMessage._id === msg._id ? (
-        <>
-          <input
-            type="text"
-            value={editingText}
-            onChange={(e) => setEditingText(e.target.value)}
-          />
-          <button onClick={() => submitEdit(msg._id, editingText)}>Submit</button>
-        </>
-      ) : (
-        <>
-          <span>{msg.text}</span>
-          {msg.isEdited && <span className="edited-indicator">(edited)</span>}
-          <br></br>
-          <small style={{ fontSize: '0.8em' }}>
-            {new Date(msg.timestamp).toLocaleString()}
-          </small>
-          {msg.user !== "System" && ((msg.user === username && !isAdmin) || isAdmin) && (
-            <>
-              {msg.user === username && <button onClick={() => startEditing(msg)}>Edit</button>}
-              <button onClick={() => deleteMessage(msg._id)}>Delete</button>
-            </>
-          )}
-        </>
-      )}
-    </div>
-  ))
-}
+        <Route path="/settings" element={<UserSettings />} />
 
-    </div>
-            </div>
-              <input type="text" value={message} onChange={(e) => setMessage(e.target.value)} />
-              <button onClick={sendMessage}>Send</button>
+        <Route path="/chat" element={
+    username ? (
+        <>
+            <p>Welcome, {username}! <button onClick={handleLogout}>Logout</button></p>
+            <select onChange={(e) => handleRoomChange(e.target.value)} value={currentRoom}>
+                {rooms.map((room) => (
+                    <option key={room} value={room}>{room}</option>
+                ))}
+            </select>
+            <div className='message-container'>
+            {messages.map((msg, index) => (
+    <div key={index} className="message">
+        <img 
+            src={`http://localhost:5000/uploads/${msg.userProfilePicture}`} 
+            alt="Profile" 
+            className="profile-picture"
+        />
+        <strong style={{ color: msg.usernameColor }}>{msg.user}: </strong>
+        {editingMessage && editingMessage._id === msg._id ? (
+            <>
+                <input
+                    type="text"
+                    value={editingText}
+                    onChange={(e) => setEditingText(e.target.value)}
+                />
+                <button onClick={() => submitEdit(msg._id, editingText)}>Submit</button>
             </>
-          ) : (
-            <Navigate replace to="/login" />
-          )
-        } />
+        ) : (
+            <>
+                <span>{msg.text}</span>
+                {msg.isEdited && <span className="edited-indicator">(edited)</span>}
+                <br />
+                <small>{new Date(msg.timestamp).toLocaleString()}</small>
+                {msg.user !== "System" && ((msg.user === username && !isAdmin) || isAdmin) && (
+                    <>
+                        {msg.user === username && <button onClick={() => startEditing(msg)}>Edit</button>}
+                        <button onClick={() => deleteMessage(msg._id)}>Delete</button>
+                    </>
+                )}
+            </>
+        )}
+    </div>
+))}
+
+            </div>
+            <div className="message-input">
+                <input 
+                    type="text" 
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    placeholder="Type a message" 
+                />
+                <button onClick={sendMessage}>Send</button>
+            </div>
+            <NavigationButton pathToNavigateTo="/settings" buttonText="To Settings" />       
+        </>
+    ) : (
+        <Navigate replace to="/login" />
+    )
+} />
+
       </Routes>
     </Router>
   );

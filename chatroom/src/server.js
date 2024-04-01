@@ -1,5 +1,6 @@
 // src/server.js
 const express = require('express');
+const path = require('path');
 const http = require('http');
 const WebSocket = require('ws');
 const bodyParser = require('body-parser');
@@ -7,9 +8,12 @@ const mongoose = require('mongoose');
 const authRoutes = require('./routes/authRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 const userRoutes = require('./routes/userRoutes.js');
+require('dotenv').config();
+
 
 
 const Message = require('./models/messageModel');
+const User = require('./models/userModel');
 
 const authController = require('./controllers/authController');
 
@@ -17,10 +21,10 @@ const app = express();
 app.use(bodyParser.json());
 
 const cors = require('cors');
-app.use(cors());
+app.use(cors({ origin: 'http://localhost:3000', credentials: true }));
 
-app.use('/user', userRoutes);
 
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 mongoose.connect('mongodb://127.0.0.1:27017/chatroom', {
 }).then(() => {
@@ -33,6 +37,8 @@ mongoose.connect('mongodb://127.0.0.1:27017/chatroom', {
 // Use the auth and chat routes
 app.use('/auth', authRoutes);
 app.use('/chat', chatRoutes);
+app.use('/user', userRoutes);
+
 
 // ...WebSocket setup and other middleware...
 
@@ -165,19 +171,25 @@ app.put('/messages/edit/:id', async (req, res) => {
   }
 });
 
+//settings
 
 
-app.put('/messages/edit/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { text, username } = req.body;
-    // Authorization checks should be here to ensure only the message owner or an admin can edit
-    const updatedMessage = await Message.findByIdAndUpdate(id, { text, editedBy: username }, { new: true });
-    res.json(updatedMessage);
-  } catch (error) {
-    res.status(500).send('Error editing message');
-  }
+app.get('/available-profile-pictures', (req, res) => {
+  const fs = require('fs');
+  const uploadsDir = path.join(__dirname, 'uploads');
+
+  fs.readdir(uploadsDir, (err, files) => {
+    if (err) {
+      console.error('Could not list the directory.', err);
+      return res.status(500).json({ error: err.message });
+    }
+
+    // Filter files to include only .png images
+    const imageFiles = files.filter(file => file.endsWith('.png'));
+    res.json(imageFiles);
+  });
 });
+
 
 
 // WebSocket server
@@ -196,24 +208,47 @@ wss.on('connection', (ws) => {
     if (data.type === 'joinRoom') {
       // Update the client's current room
       clientRooms.set(ws, data.room);
+
       // Fetch and send all messages from the joined room
       const roomMessages = await Message.find({ room: data.room }).sort({ timestamp: 1 });
+
       ws.send(JSON.stringify({ type: 'roomMessages', messages: roomMessages }));
     } else if (data.type === 'message') {
       // Create a new message in the current room
-      const newMessage = new Message({
-        user: data.user,
-        room: clientRooms.get(ws),
-        text: data.text
-      });
-      
-      await newMessage.save();
-
-      wss.clients.forEach(client => {
-        if (clientRooms.get(client) === clientRooms.get(ws) && client.readyState === WebSocket.OPEN) {
-          client.send(JSON.stringify({ type: 'newMessage', message: newMessage }));
+      try {
+        const user = await User.findOne({ username: data.user }); // Find the user by username
+        if (!user) {
+          throw new Error('User not found');
         }
-      });
+
+        const newMessage = new Message({
+          user: user.username,
+          userProfilePicture: user.profilePicture, // Assuming these fields exist on the User model
+          usernameColor: user.usernameColor,
+          text: data.text,
+          room: clientRooms.get(ws),
+        });
+
+        await newMessage.save();
+
+        // Prepare the message to send, including the user's picture and color
+        const messageToSend = {
+          ...newMessage.toObject(),
+          userProfilePicture: user.profilePicture,
+          usernameColor: user.usernameColor
+        };
+
+        // Broadcast the new message to all clients in the same room
+        wss.clients.forEach(client => {
+          if (clientRooms.get(client) === clientRooms.get(ws) && client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify({ type: 'newMessage', message: messageToSend }));
+          }
+        });
+
+      } catch (error) {
+        console.error('Error handling message event:', error);
+        // Handle errors, e.g., send a message back to the client
+      }
     }
   });
 
@@ -222,6 +257,7 @@ wss.on('connection', (ws) => {
     console.log('Client disconnected');
   });
 });
+
 
 
 module.exports = app;
