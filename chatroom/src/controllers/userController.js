@@ -1,6 +1,6 @@
 // src/controllers/userController.js
 const User = require('../models/userModel');
-const GeneralChat = require('../models/messageModel');
+const Message = require('../models/messageModel');
 
 // Function to ban a user
 exports.banUser = async (req, res) => {
@@ -8,6 +8,7 @@ exports.banUser = async (req, res) => {
     const { username } = req.body;
     // Logic to ban the user, like updating a 'banned' field in the user model
     res.status(200).send(`User ${username} banned.`);
+    await User.updateOne({ username }, { isBanned: true });
   } catch (error) {
     res.status(500).send('Error banning user');
   }
@@ -17,7 +18,7 @@ exports.banUser = async (req, res) => {
 exports.deleteMessage = async (req, res) => {
   try {
     const messageId = req.params.id;
-    const message = await GeneralChat.findById(messageId);
+    const message = await Message.findById(messageId);
 
     // If the message doesn't exist or the user isn't the author and isn't an admin, deny access.
     if (!message) {
@@ -40,9 +41,10 @@ exports.deleteMessage = async (req, res) => {
 exports.updateSettings = async (req, res) => {
   try {
     const { profilePicture, usernameColor } = req.body;
+    const userId = req.user.id;
 
-    // Find the user in the database by id instead of username
-    const user = await User.findById(req.user.id);
+    // Find the user in the database by id
+    const user = await User.findById(userId);
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
@@ -55,6 +57,15 @@ exports.updateSettings = async (req, res) => {
     // Save the updated user
     await user.save();
 
+    // Now update all past messages of this user
+    await Message.updateMany(
+      { user: user.username },  // Assuming 'user' in Message refers to username
+      { 
+        userProfilePicture: profilePicture,
+        usernameColor: usernameColor 
+      }
+    );
+
     res.status(200).json({
       message: 'Settings updated successfully',
       profilePicture: user.profilePicture,
@@ -66,6 +77,7 @@ exports.updateSettings = async (req, res) => {
     res.status(500).json({ message: 'Error updating settings' });
   }
 };
+
 
 
 // src/controllers/userController.js
@@ -81,7 +93,3 @@ exports.getSettings = async (req, res) => {
     res.status(500).json({ message: 'Error fetching user settings' });
   }
 };
-
-
-
-

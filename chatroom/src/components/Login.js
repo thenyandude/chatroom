@@ -8,22 +8,22 @@ function Login() {
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const response = await fetch('http://localhost:5000/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
-      });
+  e.preventDefault();
+  try {
+    const response = await fetch('http://localhost:5000/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    });
 
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.message || 'Login failed');
-      }
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Login failed');
+    }
 
       localStorage.setItem('username', username);
       localStorage.setItem('isAdmin', data.isAdmin); // Assuming isAdmin is sent from the server
-      localStorage.setItem('token', data.token); // Assuming isAdmin is sent from the server
+      localStorage.setItem('token', data.token); // Assuming token is sent from the server
 
       navigate('/chat');
     } catch (error) {
@@ -41,7 +41,6 @@ function Login() {
         <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" />
         <button type="submit">Login</button>
       </form>
-
       <button onClick={() => navigate('/register')}>Need an account?</button>
     </div>
   );
