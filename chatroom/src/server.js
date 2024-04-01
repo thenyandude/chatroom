@@ -71,10 +71,12 @@ app.get('/rooms', async (req, res) => {
     const exists = await Message.findOne({ room: roomName });
     if (!exists) {
       const initialMessage = new Message({
+        user: "System",
+        userProfilePicture: "system.png",
+        usernameColor: "#00000",
+        text: "Welcome to the " + roomName + " room!",
         room: roomName,
-        user: 'System',
-        text: `Welcome to the ${roomName} room!`,
-        timestamp: new Date()
+        timestamp: Date.now(),
       });
       await initialMessage.save();
     }
@@ -114,7 +116,11 @@ app.delete('/messages/:id', async (req, res) => {
     if (message.user === username || isAdmin) {
       const updatedMessage = await Message.findByIdAndUpdate(id, {
         user: "System",
+        userProfilePicture: "system.png",
+        usernameColor: "#00000",
         text: `Message deleted by ${username}`,
+        room: message.room,
+        timestamp: Date.now(),
         isDeleted: true
       }, { new: true });
 
@@ -187,11 +193,12 @@ app.get('/available-profile-pictures', (req, res) => {
       return res.status(500).json({ error: err.message });
     }
 
-    // Filter files to include only .png images
-    const imageFiles = files.filter(file => file.endsWith('.png'));
+    // Filter files to include only .png images and exclude 'system.png'
+    const imageFiles = files.filter(file => file.endsWith('.png') && file !== 'system.png');
     res.json(imageFiles);
   });
 });
+
 
 
 
