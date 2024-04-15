@@ -24,7 +24,13 @@ const app = express();
 app.use(bodyParser.json());
 
 const cors = require('cors');
-app.use(cors({ origin: 'http://localhost:3000', credentials: true }));
+const corsOptions = {
+  origin: 'http://localhost', // Frontend now on default HTTP port 80
+  credentials: true, // Support for cookies across different origins
+};
+
+app.use(cors(corsOptions));
+
 
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -204,7 +210,7 @@ app.get('/available-profile-pictures', (req, res) => {
 
 // WebSocket server
 // Corrected WebSocket server code
-const wss = new WebSocket.Server({ server });
+const ws = new WebSocket('ws://localhost:5000');
 
 // Mapping to keep track of each client's current room
 const clientRooms = new Map();
