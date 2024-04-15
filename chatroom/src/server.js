@@ -1,5 +1,6 @@
 // src/server.js
 const express = require('express');
+const cors = require('cors');
 const path = require('path');
 const http = require('http');
 const WebSocket = require('ws');
@@ -9,9 +10,6 @@ const authRoutes = require('./routes/authRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 const userRoutes = require('./routes/userRoutes.js');
 require('dotenv').config();
-
-console.log('JWT Secret:', process.env.JWT_SECRET);
-
 
 
 
@@ -23,7 +21,6 @@ const authController = require('./controllers/authController');
 const app = express();
 app.use(bodyParser.json());
 
-const cors = require('cors');
 app.use(cors({ origin: 'http://10.12.5.35:80', credentials: true }));
 
 
