@@ -9,6 +9,12 @@ function Register() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (username.toLowerCase() === "system") {
+      alert('The username "System" is reserved and cannot be used.');
+      return; // Stop the form submission
+    }
+
     try {
       const response = await fetch('http://localhost:5000/register', {
         method: 'POST',
