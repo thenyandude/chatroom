@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import NavigationButton from './NavigationButton';
+import '../css/AuthForm.css'
+
 
 function Login() {
   const [username, setUsername] = useState('');
@@ -19,6 +22,8 @@ function Login() {
     const data = await response.json();
     if (!response.ok) {
       throw new Error(data.message || 'Login failed');
+    } else{
+      navigate("/chat")
     }
 
       localStorage.setItem('username', username);
@@ -33,15 +38,15 @@ function Login() {
   };
 
   return (
-    <div>
-      <h2>Login</h2>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      <form onSubmit={handleSubmit}>
+    <div className="auth-container">
+      <form onSubmit={handleSubmit} className="auth-form">
+        <h2>Login</h2>
+        {error && <p className="error-message">{error}</p>}
         <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Username" />
         <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" />
         <button type="submit">Login</button>
       </form>
-      <button onClick={() => navigate('/register')}>Need an account?</button>
+      <NavigationButton pathToNavigateTo="/register" buttonText="Need an account?" className="nav-auth" />
     </div>
   );
 }

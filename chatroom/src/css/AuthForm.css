@@ -1,0 +1,88 @@
+/* Base container for login and register pages */
+.auth-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background: #f4f4f8;
+  }
+  
+  .auth-form {
+    width: 100%;
+    max-width: 320px;
+    padding: 20px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    background: #fff;
+    border-radius: 8px;
+    margin: 20px;
+  }
+  
+  .auth-form h2 {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  
+  .auth-form input {
+    width: 93%;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  
+  .auth-form button {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    background-color: #007bff;
+    color: white;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  
+  .auth-form button:hover {
+    background-color: #0056b3;
+  }
+  
+  .auth-form button:active {
+    background-color: #004085;
+  }
+  
+  .error-message {
+    color: red;
+    text-align: center;
+    margin: 10px 0;
+  }
+  
+  .switch-auth {
+    margin-top: 10px;
+    font-size: 0.9em;
+  }
+
+  .nav-auth {
+    padding: 10px 20px;
+    text-align: center;
+    cursor: pointer;
+    outline: none;
+    color: #fff;
+    background-color: #28a745; /* Green background for settings navigation */
+    border: none;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+  }
+  
+  .nav-auth:hover {
+    background-color: #218838;
+  }
+  
+  .nav-auth:active {
+    background-color: #1e7e34;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  }
+  
+  .nav-auth:focus {
+    box-shadow: 0 0 0 3px rgba(0,123,255,0.5);
+  }
