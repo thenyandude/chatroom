@@ -6,13 +6,17 @@ const Message = require('../models/messageModel');
 exports.banUser = async (req, res) => {
   try {
     const { username } = req.body;
-    // Logic to ban the user, like updating a 'banned' field in the user model
+    const updatedUser = await User.findOneAndUpdate({ username }, { isBanned: true }, { new: true });
+    if (!updatedUser) {
+      return res.status(404).send('User not found');
+    }
     res.status(200).send(`User ${username} banned.`);
-    await User.updateOne({ username }, { isBanned: true });
   } catch (error) {
+    console.error('Error banning user:', error);
     res.status(500).send('Error banning user');
   }
 };
+
 
 // Function to delete a message (admin)
 exports.deleteMessage = async (req, res) => {
@@ -40,38 +44,26 @@ exports.deleteMessage = async (req, res) => {
 
 exports.updateSettings = async (req, res) => {
   try {
-    const { profilePicture, usernameColor } = req.body;
-    const userId = req.user.id;
+    const { profilePicture, usernameColor, pronouns, description } = req.body;
+    const userId = req.user.id;  // Ensure req.user is properly set by your authentication middleware
 
-    // Find the user in the database by id
-    const user = await User.findById(userId);
+    const updatedUser = await User.findByIdAndUpdate(userId, {
+      profilePicture,
+      usernameColor,
+      pronouns,
+      description
+    }, { new: true });
 
-    if (!user) {
+    if (!updatedUser) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Update the user's settings
-    user.profilePicture = profilePicture;
-    user.usernameColor = usernameColor;
-
-    // Save the updated user
-    await user.save();
-
-    // Now update all past messages of this user
-    await Message.updateMany(
-      { user: user.username },  // Assuming 'user' in Message refers to username
-      { 
-        userProfilePicture: profilePicture,
-        usernameColor: usernameColor 
-      }
-    );
-
+    // Also update the messages if needed, or you can decide to keep them as they were when created
     res.status(200).json({
       message: 'Settings updated successfully',
-      profilePicture: user.profilePicture,
-      usernameColor: user.usernameColor
+      data: updatedUser
     });
-    
+
   } catch (error) {
     console.error('Error updating settings:', error);
     res.status(500).json({ message: 'Error updating settings' });
@@ -80,11 +72,12 @@ exports.updateSettings = async (req, res) => {
 
 
 
+
 // src/controllers/userController.js
 exports.getSettings = async (req, res) => {
   try {
     const username = req.params.username;
-    const user = await User.findOne({ username: username }, 'profilePicture usernameColor -_id');
+    const user = await User.findOne({ username }, 'profilePicture usernameColor pronouns description -_id');
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }

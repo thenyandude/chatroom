@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import NavigationButton from './NavigationButton';
-import '../css/Chat.css'
+import UserProfileModal from './UserProfileModal';
+import '../css/Chat.css';
 
 function Chat({ 
     username, 
@@ -20,7 +21,15 @@ function Chat({
     setEditingText, 
     editingText 
 }) {
-    
+
+    const [selectedUser, setSelectedUser] = useState(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
+    const handleProfileClick = (user) => {
+        setSelectedUser(user);
+        setIsModalOpen(true);
+    };
+
     return (
         <>
             <p>
@@ -42,6 +51,7 @@ function Chat({
                             src={`http://localhost:5000/uploads/${msg.userProfilePicture}`} 
                             alt="Profile" 
                             className="profile-picture"
+                            onClick={() => handleProfileClick(msg.user)}
                             style={{ borderColor: msg.usernameColor }} // Color applied to the border
                         />
                         <strong style={{color: msg.usernameColor}}>{msg.user}: </strong>
@@ -71,6 +81,14 @@ function Chat({
                         )}
                     </div>
                 ))}
+
+                {isModalOpen && (
+                    <UserProfileModal 
+                        user={selectedUser} 
+                        isAdmin={isAdmin} 
+                        onClose={() => setIsModalOpen(false)} 
+                    />
+                )}
             </div>
 
             <div className="message-input">

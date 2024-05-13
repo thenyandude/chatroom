@@ -4,6 +4,7 @@ import Register from './Register';
 import Login from './Login';
 import UserSettings from './UserSettings';
 import Chat from './Chat';
+import { UserProvider } from '../context/UserContext';
 
 function App() {
   const [username, setUsername] = useState(localStorage.getItem('username') || '');
@@ -163,6 +164,7 @@ function App() {
 
 
   return (
+    <UserProvider>
     <Router>
       <Routes>
         <Route path="/" element={<Navigate replace to="/register" />} />
@@ -192,6 +194,7 @@ function App() {
 
       </Routes>
     </Router>
+    </UserProvider>
   );
 }
 
