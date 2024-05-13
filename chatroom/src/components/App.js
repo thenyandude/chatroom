@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate} from 'react-router-dom';
-import '../App.css'
 import Register from './Register';
 import Login from './Login';
 import UserSettings from './UserSettings';
-import NavigationButton from './NavigationButton'; // Adjust the path as per your directory structure
-
+import Chat from './Chat';
 
 function App() {
   const [username, setUsername] = useState(localStorage.getItem('username') || '');
@@ -171,71 +169,31 @@ function App() {
         <Route path="/register" element={username ? <Navigate replace to="/chat" /> : <Register />} />
         <Route path="/login" element={username ? <Navigate replace to="/chat" /> : <Login onLogin={setUsername} />} />
         <Route path="/settings" element={<UserSettings />} />
-
         <Route path="/chat" element={
-    username ? (
-        <>
-            <p>Welcome, {username}! <button onClick={handleLogout}>Logout</button></p>
-            <select onChange={(e) => handleRoomChange(e.target.value)} value={currentRoom}>
-                {rooms.map((room) => (
-                    <option key={room} value={room}>{room}</option>
-                ))}
-            </select>
-            <div className='message-container'>
-            {messages.map((msg, index) => (
-    <div key={index} className="message">
-        <img 
-            src={`http://localhost:5000/uploads/${msg.userProfilePicture}`} 
-            alt="Profile" 
-            className="profile-picture"
-        />
-        <strong style={{ color: msg.usernameColor }}>{msg.user}: </strong>
-        {editingMessage && editingMessage._id === msg._id ? (
-            <>
-                <input
-                    type="text"
-                    value={editingText}
-                    onChange={(e) => setEditingText(e.target.value)}
-                />
-                <button onClick={() => submitEdit(msg._id, editingText)}>Submit</button>
-            </>
-        ) : (
-            <>
-                <span>{msg.text}</span>
-                {msg.isEdited && <span className="edited-indicator">(edited)</span>}
-                <br />
-                <small>{new Date(msg.timestamp).toLocaleString()}</small>
-                {msg.user !== "System" && ((msg.user === username && !isAdmin) || isAdmin) && (
-                    <>
-                        {msg.user === username && <button onClick={() => startEditing(msg)}>Edit</button>}
-                        <button onClick={() => deleteMessage(msg._id)}>Delete</button>
-                    </>
-                )}
-            </>
-        )}
-    </div>
-))}
-
-            </div>
-            <div className="message-input">
-                <input 
-                    type="text" 
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    placeholder="Type a message" 
-                />
-                <button onClick={sendMessage}>Send</button>
-            </div>
-            <NavigationButton pathToNavigateTo="/settings" buttonText="To Settings" />       
-        </>
-    ) : (
-        <Navigate replace to="/login" />
-    )
+    username ? <Chat 
+        username={username} 
+        rooms={rooms} // Ensure this prop is being passed
+        currentRoom={currentRoom}
+        handleRoomChange={handleRoomChange}
+        messages={messages}
+        setMessage={setMessage}
+        sendMessage={sendMessage}
+        deleteMessage={deleteMessage}
+        startEditing={startEditing}
+        submitEdit={submitEdit}
+        handleLogout={handleLogout}
+        isAdmin={isAdmin}
+        editingMessage={editingMessage}
+        setEditingText={setEditingText}
+        userProfilePicture={userProfilePicture}
+        usernameColor={usernameColor}
+    /> : <Navigate replace to="/login" />
 } />
 
       </Routes>
     </Router>
   );
 }
+
 
 export default App;

@@ -1,0 +1,121 @@
+/* Profile Pictures Container */
+.settings-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Centers items horizontally in a column layout */
+    justify-content: center; /* Center items vertically if needed */
+    max-width: 1800px;
+    margin: 20px auto;
+    padding: 20px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  }
+
+.profile-pictures-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center; /* Ensures images are centered within the container */
+    margin-top: 20px;
+    width: 100%; /* Ensures the container takes full width of the form */
+  }
+  
+  .profile-picture-option {
+    width: 200px;
+    height: 200px;
+    border: 2px solid transparent;
+    border-radius: 50%;
+    margin: 10px;
+    cursor: pointer;
+    transition: border-color 0.3s, transform 0.3s;
+    object-fit: cover; /* Ensures images are scaled correctly */
+  }
+  
+  .profile-picture-option:hover, .profile-picture-option.active {
+    transform: scale(1.05); /* Slightly enlarge on hover */
+  }
+
+  .profile-picture-preview{
+        width: 200px;
+        height: 200px;
+        border: 5px solid transparent;
+        border-radius: 50%;
+        margin: 10px;
+        cursor: pointer;
+        object-fit: cover; /* Ensures images are scaled correctly */
+        border-color: #007bff; /* Highlight on hover and active */
+
+  }
+  
+  /* Input and Button Styles */
+  .settings-input, .settings-color-picker, .settings-submit-button {
+    display: block;
+    width: 30%;
+    padding: 10px;
+    margin-top: 30px;
+    border-radius: 4px;
+    box-sizing: border-box; /* Ensures padding doesn't affect width */
+  }
+  
+  .settings-color-picker {
+    height: 50px; /* Larger touch area for color picker */
+    border: none; /* Removes default border */
+    cursor: pointer;
+  }
+  
+  .settings-submit-button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.2s;
+  }
+  
+  .settings-submit-button:hover {
+    background-color: #0056b3; /* Darker blue on hover */
+  }
+  
+  .settings-submit-button:active {
+    transform: scale(0.98); /* Slightly shrink when clicked */
+  }
+
+  .nav-settings {
+    padding: 10px 20px;
+    margin-top: 50px;
+    text-align: center;
+    cursor: pointer;
+    outline: none;
+    color: #fff;
+    background-color: #28a745; /* Green background for settings navigation */
+    border: none;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+  }
+  
+  .nav-settings:hover {
+    background-color: #218838;
+  }
+  
+  .nav-settings:active {
+    background-color: #1e7e34;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  }
+  
+  .nav-settings:focus {
+    box-shadow: 0 0 0 3px rgba(0,123,255,0.5);
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 600px) {
+    .settings-form {
+      margin: 10px;
+      padding: 10px;
+    }
+  
+    .profile-picture-option {
+      width: 150px;
+      height: 150px; /* Smaller size on mobile devices */
+    }
+  }
+  

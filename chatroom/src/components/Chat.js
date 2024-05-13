@@ -1,9 +1,9 @@
 import React from 'react';
+import NavigationButton from './NavigationButton';
+import '../css/Chat.css'
 
 function Chat({ 
     username, 
-    userProfilePicture,
-    usernameColor,
     message,
     rooms, 
     currentRoom, 
@@ -23,30 +23,37 @@ function Chat({
     
     return (
         <>
-            <p>Welcome, {username}! <button onClick={handleLogout}>Logout</button></p>
-            <select onChange={(e) => handleRoomChange(e.target.value)} value={currentRoom}>
-                {rooms.map((room) => (
-                    <option key={room} value={room}>{room}</option>
-                ))}
-            </select>
+            <p>
+                Welcome, {username}! 
+                <button onClick={handleLogout} className="button-secondary">Logout</button>
+                <NavigationButton pathToNavigateTo={"/settings"} buttonText={"Settings"} className="nav-chat"/>
+            </p>
+            <div className="dropdown-room">
+                <select onChange={(e) => handleRoomChange(e.target.value)} value={currentRoom} className="dropdown-select">
+                    {rooms.map((room) => (
+                        <option key={room} value={room}>{room}</option>
+                    ))}
+                </select>
+            </div>
             <div className='message-container'>
                 {messages.map((msg, index) => (
-                    <div key={index} className="message" style={{color: msg.usernameColor}}>
+                    <div key={index} className="message">
                         <img 
                             src={`http://localhost:5000/uploads/${msg.userProfilePicture}`} 
                             alt="Profile" 
                             className="profile-picture"
-                            style={{ borderColor: msg.usernameColor }} // If you want to apply color to the border
+                            style={{ borderColor: msg.usernameColor }} // Color applied to the border
                         />
-                        <strong>{msg.user}: </strong>
+                        <strong style={{color: msg.usernameColor}}>{msg.user}: </strong>
                         {editingMessage && editingMessage._id === msg._id ? (
                             <>
                                 <input
                                     type="text"
                                     value={editingText}
                                     onChange={(e) => setEditingText(e.target.value)}
+                                    className="input-edit"
                                 />
-                                <button onClick={() => submitEdit(msg._id, editingText)}>Submit</button>
+                                <button onClick={() => submitEdit(msg._id, editingText)} className="button-primary">Submit</button>
                             </>
                         ) : (
                             <>
@@ -56,8 +63,8 @@ function Chat({
                                 <small>{new Date(msg.timestamp).toLocaleString()}</small>
                                 {msg.user !== "System" && ((msg.user === username && !isAdmin) || isAdmin) && (
                                     <>
-                                        {msg.user === username && <button onClick={() => startEditing(msg)}>Edit</button>}
-                                        <button onClick={() => deleteMessage(msg._id)}>Delete</button>
+                                        {msg.user === username && <button onClick={() => startEditing(msg)} className="button-tertiary">Edit</button>}
+                                        <button onClick={() => deleteMessage(msg._id)} className="button-danger">Delete</button>
                                     </>
                                 )}
                             </>
@@ -72,8 +79,9 @@ function Chat({
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     placeholder="Type a message" 
+                    className="input-message"
                 />
-                <button onClick={sendMessage}>Send</button>
+                <button onClick={sendMessage} className="button-primary">Send</button>
             </div>
         </>
     );

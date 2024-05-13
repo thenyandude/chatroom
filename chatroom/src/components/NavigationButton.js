@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
-function NavigationButton({ pathToNavigateTo, buttonText }) {
+function NavigationButton({ pathToNavigateTo, buttonText, className }) {
     const navigate = useNavigate();
 
     const handleNavigation = () => {
@@ -9,7 +9,9 @@ function NavigationButton({ pathToNavigateTo, buttonText }) {
     };
 
     return (
-        <button onClick={handleNavigation}>{buttonText}</button>
+        <button className={`button navigation-button ${className}`} onClick={handleNavigation}>
+            {buttonText}
+        </button>
     );
 }
 

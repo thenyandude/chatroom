@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import NavigationButton from './NavigationButton';
+import '../css/UserSettings.css'
 
 function UserSettings() {
   const [profilePicture, setProfilePicture] = useState(null);
@@ -105,31 +106,40 @@ function UserSettings() {
   }, [token]);
   
   return (
-    <form onSubmit={handleSubmit}>
-      {previewImage && (
-        <img 
-          src={previewImage} 
-          alt="Profile Preview" 
-          style={{ width: '100px', height: '100px' }} 
+    <form onSubmit={handleSubmit} className="settings-form">
+    {previewImage && (
+      <img 
+        src={previewImage} 
+        alt="Profile Preview" 
+        className="profile-picture-preview"
+        style={{ 
+          borderColor: usernameColor, // Dynamically set the border color
+        }} 
+      />
+    )}
+  
+    <div className="profile-pictures-container">
+      {availablePfps.map(pfp => (
+        <img
+          key={pfp}
+          src={`http://localhost:5000/uploads/${pfp}`}
+          alt={`Profile Picture`}
+          onClick={() => selectProfilePicture(pfp)}
+          className={`profile-picture-option ${profilePicture === pfp ? 'active' : ''}`}
+          style={{
+            borderColor: profilePicture === pfp ? usernameColor : 'transparent', // Dynamically set the border color for active selection
+          }}
         />
-      )}
-
-      <div>
-        {availablePfps.map(pfp => (
-          <img
-            key={pfp}
-            src={`http://localhost:5000/uploads/${pfp}`}
-            alt={`Profile Picture`}
-            onClick={() => selectProfilePicture(pfp)}
-            style={{ width: '100px', height: '100px', cursor: 'pointer', margin: '10px' }}
-          />
-        ))}
-      </div>
-
-      <input type="color" value={usernameColor} onChange={handleColorChange} />
-      <button type="submit">Update Settings</button>
-      <NavigationButton pathToNavigateTo="/chat" buttonText="Back to Chat" />
-    </form>
+      ))}
+    </div>
+  
+    <input type="color" value={usernameColor} onChange={handleColorChange} className="settings-color-picker" />
+    <button type="submit" className="settings-submit-button">Update Settings</button>
+    <NavigationButton pathToNavigateTo="/chat" buttonText="Back to Chat" className="nav-settings" />
+  </form>
+  
+  
+  
   );
 }
 
