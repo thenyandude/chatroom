@@ -29,7 +29,7 @@ app.use(cors({ origin: 'http://localhost:3000', credentials: true }));
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-mongoose.connect('mongodb://127.0.0.1:27017/chatroom', {
+mongoose.connect('mongodb://10.12.5.42:27017/chatroom', {
 }).then(() => {
   console.log('Connected to MongoDB');
 }).catch(err => {
