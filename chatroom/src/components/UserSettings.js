@@ -1,39 +1,51 @@
 import React, { useState, useEffect } from 'react';
 import NavigationButton from './NavigationButton';
-import '../css/UserSettings.css'
+import '../css/UserSettings.css';
 
-function UserSettings() {
-  const [profilePicture, setProfilePicture] = useState(null);
-  const [previewImage, setPreviewImage] = useState(null);
-  const [usernameColor, setUsernameColor] = useState('#000000');
+function UserSettings({ user, updateUser }) {
+  const [profilePicture, setProfilePicture] = useState(user.profilePicture);
+  const [previewImage, setPreviewImage] = useState('');
+  const [usernameColor, setUsernameColor] = useState(user.usernameColor);
   const [availablePfps, setAvailablePfps] = useState([]);
-  const [token, setToken] = useState(""); // State to hold the token
+  const [token, setToken] = useState(localStorage.getItem('token'));
+
+  const [description, setDescription] = useState(user.description || '');
+  const [pronouns, setPronouns] = useState(user.pronouns || '');
 
   useEffect(() => {
-    // Fetch token from localStorage after component mounts
     const fetchedToken = localStorage.getItem('token');
-    if (fetchedToken) {
-      setToken(fetchedToken);
-    } else {
+    setToken(fetchedToken);
+  
+    if (!fetchedToken) {
       console.error('No token found in storage');
     }
-
-    // Fetch available profile pictures
-    const fetchAvailablePfps = async () => {
+  
+    const fetchData = async () => {
       try {
-        const response = await fetch('http://localhost:5000/available-profile-pictures');
-        if (!response.ok) {
-          throw new Error('Failed to fetch available profile pictures');
-        }
-        const data = await response.json();
-        setAvailablePfps(data);
+        const responsePfps = await fetch('http://localhost:5000/available-profile-pictures');
+        const dataPfps = await responsePfps.json();
+        setAvailablePfps(dataPfps);
+  
+        const responseUserSettings = await fetch(`http://localhost:5000/user/${localStorage.getItem('username')}/settings`, {
+          headers: {
+            'Authorization': `Bearer ${fetchedToken}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        const dataUserSettings = await responseUserSettings.json();
+        setUsernameColor(dataUserSettings.usernameColor);
+        setProfilePicture(dataUserSettings.profilePicture);
+        setPreviewImage(`http://localhost:5000/uploads/${dataUserSettings.profilePicture}`);
+        setDescription(dataUserSettings.description || '');
+        setPronouns(dataUserSettings.pronouns || '');
       } catch (error) {
-        console.error('Error fetching available profile pictures:', error);
+        console.error('Error fetching data:', error);
       }
     };
-
-    fetchAvailablePfps();
-  }, []);
+  
+    fetchData();
+  }, [token], user.username);
+  
 
   const selectProfilePicture = (filename) => {
     setProfilePicture(filename);
@@ -46,12 +58,14 @@ function UserSettings() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+  
     const body = {
-      profilePicture: profilePicture,
-      usernameColor: usernameColor,
+      profilePicture,
+      usernameColor,
+      description,
+      pronouns
     };
-
+  
     try {
       const response = await fetch('http://localhost:5000/user/updateSettings', {
         method: 'PUT',
@@ -61,85 +75,68 @@ function UserSettings() {
         },
         body: JSON.stringify(body),
       });
-
+  
       if (!response.ok) {
         throw new Error('Failed to update settings: ' + response.status);
       }
-
+  
       const data = await response.json();
-      console.log(data.message);
+      console.log('Settings updated successfully:', data);
+      updateUser({
+        ...user,
+        profilePicture: body.profilePicture,
+        usernameColor: body.usernameColor,
+        description: body.description,
+        pronouns: body.pronouns
+      });
+  
     } catch (error) {
       console.error('Error updating settings:', error);
     }
   };
-
-  // Fetch user settings whenever token changes
-  useEffect(() => {
-    const fetchUserSettings = async () => {
-      if (!token) {
-        console.error('No token available');
-        return;
-      }
-  
-      try {
-        const username = localStorage.getItem('username'); // Assuming username is stored in localStorage
-        const response = await fetch(`http://localhost:5000/user/${username}/settings`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-  
-        if (!response.ok) {
-          throw new Error('Failed to fetch settings');
-        }
-        const data = await response.json();
-        setUsernameColor(data.usernameColor);
-        setPreviewImage(`http://localhost:5000/uploads/${data.profilePicture}`);
-        console.log("Fetched settings:", data);
-      } catch (error) {
-        console.error('Error fetching settings:', error);
-      }
-    };
-  
-    fetchUserSettings();
-  }, [token]);
   
   return (
     <form onSubmit={handleSubmit} className="settings-form">
-    {previewImage && (
-      <img 
-        src={previewImage} 
-        alt="Profile Preview" 
-        className="profile-picture-preview"
-        style={{ 
-          borderColor: usernameColor, // Dynamically set the border color
-        }} 
-      />
-    )}
-  
-    <div className="profile-pictures-container">
-      {availablePfps.map(pfp => (
-        <img
-          key={pfp}
-          src={`http://localhost:5000/uploads/${pfp}`}
-          alt={`Profile Picture`}
-          onClick={() => selectProfilePicture(pfp)}
-          className={`profile-picture-option ${profilePicture === pfp ? 'active' : ''}`}
-          style={{
-            borderColor: profilePicture === pfp ? usernameColor : 'transparent', // Dynamically set the border color for active selection
-          }}
+      {previewImage && (
+        <img 
+          src={previewImage} 
+          alt="Profile Preview" 
+          className="profile-picture-preview"
+          style={{ borderColor: usernameColor }}
         />
-      ))}
-    </div>
-  
-    <input type="color" value={usernameColor} onChange={handleColorChange} className="settings-color-picker" />
-    <button type="submit" className="settings-submit-button">Update Settings</button>
-    <NavigationButton pathToNavigateTo="/chat" buttonText="Back to Chat" className="nav-settings" />
-  </form>
-  
-  
-  
+      )}
+
+      <div className="profile-pictures-container">
+        {availablePfps.map(pfp => (
+          <img
+            key={pfp}
+            src={`http://localhost:5000/uploads/${pfp}`}
+            alt="Profile Picture"
+            onClick={() => selectProfilePicture(pfp)}
+            className={`profile-picture-option ${profilePicture === pfp ? 'active' : ''}`}
+            style={{
+              borderColor: profilePicture === pfp ? usernameColor : 'transparent',
+            }}
+          />
+        ))}
+      </div>
+
+      <input type="color" value={usernameColor} onChange={handleColorChange} className="settings-color-picker" />
+
+      <label>
+        Description:
+        <textarea value={description} onChange={(e) => setDescription(e.target.value)} />
+        </label>
+
+        <label>
+        Pronouns:
+        <input type="text" value={pronouns} onChange={(e) => setPronouns(e.target.value)} />
+    </label>
+
+
+      <button type="submit" className="settings-submit-button">Update Settings</button>
+      <NavigationButton pathToNavigateTo="/chat" buttonText="Back to Chat" className="nav-settings" />
+    </form>
   );
 }
 

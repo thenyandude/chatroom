@@ -24,7 +24,6 @@ function Chat({
     return (
         <>
             <p>
-                Welcome, {username}! 
                 <button onClick={handleLogout} className="button-secondary">Logout</button>
                 <NavigationButton pathToNavigateTo={"/settings"} buttonText={"Settings"} className="nav-chat"/>
             </p>

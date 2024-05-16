@@ -19,4 +19,9 @@ router.get('/getSettings', authController.protect, userController.getSettings);
 // In userRoutes.js or a similar file
 router.get('/:username/settings', authController.protect, userController.getSettings);
 
+// Routes related to user profiles
+router.get('/:username/profile', authController.protect, userController.getProfile);
+router.put('/:username/updateProfile', authController.protect, userController.updateProfile);
+
+
 module.exports = router;

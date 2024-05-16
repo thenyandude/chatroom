@@ -84,7 +84,7 @@ exports.updateSettings = async (req, res) => {
 exports.getSettings = async (req, res) => {
   try {
     const username = req.params.username;
-    const user = await User.findOne({ username: username }, 'profilePicture usernameColor -_id');
+    const user = await User.findOne({ username: username }, 'profilePicture usernameColor description pronouns -_id');
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
@@ -93,3 +93,43 @@ exports.getSettings = async (req, res) => {
     res.status(500).json({ message: 'Error fetching user settings' });
   }
 };
+
+
+exports.getProfile = async (req, res) => {
+  try {
+    const username = req.params.username;
+    const user = await User.findOne({ username }, 'profilePicture description pronouns -_id');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.status(200).json(user);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching user profile' });
+  }
+};
+
+// Function to update user profile
+exports.updateProfile = async (req, res) => {
+  const { username } = req.params; // Get username from URL parameters
+  const { description, pronouns } = req.body;
+  
+  const user = await User.findOne({ username });
+  if (!user) {
+      return res.status(404).send({ message: 'User not found' });
+  }
+
+  user.description = description || user.description;
+  user.pronouns = pronouns || user.pronouns;
+
+  await user.save();
+
+  res.status(200).json({
+      message: 'Profile updated successfully',
+      data: {
+          username: user.username,
+          description: user.description,
+          pronouns: user.pronouns
+      }
+  });
+};
+
