@@ -40,7 +40,7 @@ exports.deleteMessage = async (req, res) => {
 
 exports.updateSettings = async (req, res) => {
   try {
-    const { profilePicture, usernameColor } = req.body;
+    const { profilePicture, usernameColor, description, pronouns } = req.body;
     const userId = req.user.id;
 
     // Find the user in the database by id
@@ -53,6 +53,8 @@ exports.updateSettings = async (req, res) => {
     // Update the user's settings
     user.profilePicture = profilePicture;
     user.usernameColor = usernameColor;
+    user.description = description;
+    user.pronouns = pronouns;
 
     // Save the updated user
     await user.save();
@@ -69,7 +71,9 @@ exports.updateSettings = async (req, res) => {
     res.status(200).json({
       message: 'Settings updated successfully',
       profilePicture: user.profilePicture,
-      usernameColor: user.usernameColor
+      usernameColor: user.usernameColor,
+      description: user.description,
+      pronouns: user.pronouns
     });
     
   } catch (error) {
@@ -77,6 +81,7 @@ exports.updateSettings = async (req, res) => {
     res.status(500).json({ message: 'Error updating settings' });
   }
 };
+
 
 
 

@@ -15,17 +15,18 @@ function UserSettings({ user, updateUser }) {
   useEffect(() => {
     const fetchedToken = localStorage.getItem('token');
     setToken(fetchedToken);
-  
+
     if (!fetchedToken) {
       console.error('No token found in storage');
+      return;
     }
-  
+
     const fetchData = async () => {
       try {
         const responsePfps = await fetch('http://localhost:5000/available-profile-pictures');
         const dataPfps = await responsePfps.json();
         setAvailablePfps(dataPfps);
-  
+
         const responseUserSettings = await fetch(`http://localhost:5000/user/${localStorage.getItem('username')}/settings`, {
           headers: {
             'Authorization': `Bearer ${fetchedToken}`,
@@ -42,10 +43,9 @@ function UserSettings({ user, updateUser }) {
         console.error('Error fetching data:', error);
       }
     };
-  
+
     fetchData();
-  }, [token], user.username);
-  
+  }, [user.username]);
 
   const selectProfilePicture = (filename) => {
     setProfilePicture(filename);
@@ -58,14 +58,14 @@ function UserSettings({ user, updateUser }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
+
     const body = {
       profilePicture,
       usernameColor,
       description,
       pronouns
     };
-  
+
     try {
       const response = await fetch('http://localhost:5000/user/updateSettings', {
         method: 'PUT',
@@ -75,11 +75,11 @@ function UserSettings({ user, updateUser }) {
         },
         body: JSON.stringify(body),
       });
-  
+
       if (!response.ok) {
         throw new Error('Failed to update settings: ' + response.status);
       }
-  
+
       const data = await response.json();
       console.log('Settings updated successfully:', data);
       updateUser({
@@ -89,12 +89,12 @@ function UserSettings({ user, updateUser }) {
         description: body.description,
         pronouns: body.pronouns
       });
-  
+
     } catch (error) {
       console.error('Error updating settings:', error);
     }
   };
-  
+
   return (
     <form onSubmit={handleSubmit} className="settings-form">
       {previewImage && (
@@ -126,13 +126,12 @@ function UserSettings({ user, updateUser }) {
       <label>
         Description:
         <textarea value={description} onChange={(e) => setDescription(e.target.value)} />
-        </label>
+      </label>
 
-        <label>
+      <label>
         Pronouns:
         <input type="text" value={pronouns} onChange={(e) => setPronouns(e.target.value)} />
-    </label>
-
+      </label>
 
       <button type="submit" className="settings-submit-button">Update Settings</button>
       <NavigationButton pathToNavigateTo="/chat" buttonText="Back to Chat" className="nav-settings" />

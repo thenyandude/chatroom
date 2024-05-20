@@ -10,9 +10,6 @@ const chatRoutes = require('./routes/chatRoutes');
 const userRoutes = require('./routes/userRoutes.js');
 require('dotenv').config();
 
-console.log('JWT Secret:', process.env.JWT_SECRET);
-
-
 
 
 const Message = require('./models/messageModel');
