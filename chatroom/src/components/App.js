@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import Register from './Register';
 import Login from './Login';
 import UserSettings from './UserSettings';
 import Chat from './Chat';
 
 function App() {
+  const navigate = useNavigate();
+
   const [user, setUser] = useState({
     username: localStorage.getItem('username') || '',
     profilePicture: localStorage.getItem('userProfilePicture') || '',
@@ -14,7 +16,6 @@ function App() {
     description: '',
     pronouns: '',
   });
-
 
   const [rooms, setRooms] = useState(['general']);
   const [currentRoom, setCurrentRoom] = useState('general');
@@ -81,10 +82,8 @@ function App() {
       description: '',
       pronouns: '',
     });
+    navigate('/login');
   };
-
-
-
 
   const sendMessage = () => {
     if (socket) {
@@ -101,17 +100,14 @@ function App() {
     }
   };
 
-  // Route definitions
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Navigate replace to="/login" />} />
-        <Route path="/register" element={user.username ? <Navigate replace to="/chat" /> : <Register />} />
-        <Route path="/login" element={user.username ? <Navigate replace to="/chat" /> : <Login onLogin={setUser} />} />
-        <Route path="/settings" element={<UserSettings user={user} updateUser={setUser} />} />
-        <Route path="/chat" element={<Chat user={user} rooms={rooms} currentRoom={currentRoom} messages={messages} setMessage={setMessage} sendMessage={sendMessage} />} />
-      </Routes>
-    </Router>
+    <Routes>
+      <Route path="/" element={<Navigate replace to="/login" />} />
+      <Route path="/register" element={user.username ? <Navigate replace to="/chat" /> : <Register />} />
+      <Route path="/login" element={user.username ? <Navigate replace to="/chat" /> : <Login onLogin={setUser} />} />
+      <Route path="/settings" element={<UserSettings user={user} updateUser={setUser} />} />
+      <Route path="/chat" element={<Chat user={user} rooms={rooms} currentRoom={currentRoom} messages={messages} setMessage={setMessage} sendMessage={sendMessage} handleLogout={handleLogout} editingMessage={editingMessage} setEditingMessage={setEditingMessage} editingText={editingText} setEditingText={setEditingText} />} />
+    </Routes>
   );
 }
 

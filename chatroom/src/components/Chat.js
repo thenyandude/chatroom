@@ -1,26 +1,25 @@
 import React from 'react';
 import NavigationButton from './NavigationButton';
-import '../css/Chat.css'
+import '../css/Chat.css';
 
-function Chat({ 
-    username, 
+function Chat({
+    username,
     message,
-    rooms, 
-    currentRoom, 
-    handleRoomChange, 
-    messages, 
-    setMessage, 
-    sendMessage, 
-    deleteMessage, 
-    startEditing, 
-    submitEdit, 
-    handleLogout, 
-    isAdmin, 
-    editingMessage, 
-    setEditingText, 
-    editingText 
+    rooms,
+    currentRoom,
+    handleRoomChange,
+    messages,
+    setMessage,
+    sendMessage,
+    deleteMessage,
+    startEditing,
+    submitEdit,
+    handleLogout,
+    isAdmin,
+    editingMessage,
+    setEditingText,
+    editingText
 }) {
-    
     return (
         <>
             <p>
