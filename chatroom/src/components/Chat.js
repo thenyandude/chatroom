@@ -1,6 +1,7 @@
+// src/components/Chat.js
 import React, { useState } from 'react';
 import NavigationButton from './NavigationButton';
-import UserInfoModal from './UserProfileModal';
+import UserProfileModal from './UserProfileModal';
 import '../css/Chat.css';
 
 function Chat({
@@ -30,13 +31,14 @@ function Chat({
         }
       });
       const data = await response.json();
-      setSelectedUser(data);
+      setSelectedUser({ ...data, username }); // Include username in selectedUser state
     } catch (error) {
       console.error('Error fetching user profile:', error);
     }
   };
 
   const handleBanUser = async (username) => {
+    console.log("Ban user API call initiated for user:", username); // Debug line
     try {
       const response = await fetch(`http://localhost:5000/user/ban`, {
         method: 'POST',
@@ -126,7 +128,7 @@ function Chat({
       </div>
 
       {selectedUser && (
-        <UserInfoModal 
+        <UserProfileModal 
           user={selectedUser} 
           onClose={closeModal} 
           onBan={handleBanUser} 

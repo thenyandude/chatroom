@@ -6,12 +6,21 @@ const Message = require('../models/messageModel');
 exports.banUser = async (req, res) => {
   try {
     const { username } = req.body;
+    console.log(`Banning user: ${username}`); // Debug line
+    const user = await User.findOne({ username });
+    if (!user) {
+      return res.status(404).send('User not found');
+    }
+
     await User.updateOne({ username }, { isBanned: true });
     res.status(200).send(`User ${username} banned.`);
   } catch (error) {
+    console.error('Error banning user:', error);
     res.status(500).send('Error banning user');
   }
 };
+
+
 
 // Function to delete a message (admin)
 exports.deleteMessage = async (req, res) => {
