@@ -20,6 +20,7 @@ function Chat({
     editingText,
     setEditingText
 }) {
+    console.log('Rooms:', rooms); // Add this line to debug rooms
     return (
         <>
             <p>

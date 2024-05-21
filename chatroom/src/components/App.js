@@ -34,7 +34,7 @@ function App() {
         },
       });
       const data = await response.json();
-      setRooms(data);
+      setRooms(Array.isArray(data) ? data : []);
     };
 
     fetchRooms();
@@ -136,8 +136,6 @@ function App() {
       console.error('Failed to delete message');
     }
   };
-  
-  
 
   const startEditing = (message) => {
     setEditingMessage(message);

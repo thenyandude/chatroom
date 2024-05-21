@@ -15,18 +15,19 @@ function UserSettings({ user, updateUser }) {
   useEffect(() => {
     const fetchedToken = localStorage.getItem('token');
     setToken(fetchedToken);
-
+  
     if (!fetchedToken) {
       console.error('No token found in storage');
       return;
     }
-
+  
     const fetchData = async () => {
       try {
         const responsePfps = await fetch('http://localhost:5000/available-profile-pictures');
         const dataPfps = await responsePfps.json();
+        console.log('Fetched Profile Pictures:', dataPfps); // Debugging statement
         setAvailablePfps(dataPfps);
-
+  
         const responseUserSettings = await fetch(`http://localhost:5000/user/${localStorage.getItem('username')}/settings`, {
           headers: {
             'Authorization': `Bearer ${fetchedToken}`,
@@ -34,6 +35,7 @@ function UserSettings({ user, updateUser }) {
           }
         });
         const dataUserSettings = await responseUserSettings.json();
+        console.log('Fetched User Settings:', dataUserSettings); // Debugging statement
         setUsernameColor(dataUserSettings.usernameColor);
         setProfilePicture(dataUserSettings.profilePicture);
         setPreviewImage(`http://localhost:5000/uploads/${dataUserSettings.profilePicture}`);
@@ -43,9 +45,10 @@ function UserSettings({ user, updateUser }) {
         console.error('Error fetching data:', error);
       }
     };
-
+  
     fetchData();
   }, [user.username]);
+  
 
   const selectProfilePicture = (filename) => {
     setProfilePicture(filename);

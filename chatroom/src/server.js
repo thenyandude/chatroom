@@ -34,6 +34,23 @@ app.use('/auth', authRoutes);
 app.use('/chat', chatRoutes);
 app.use('/user', userRoutes);
 
+// Add the available-profile-pictures endpoint
+app.get('/available-profile-pictures', (req, res) => {
+  const fs = require('fs');
+  const uploadsDir = path.join(__dirname, 'uploads');
+
+  fs.readdir(uploadsDir, (err, files) => {
+    if (err) {
+      console.error('Could not list the directory.', err);
+      return res.status(500).json({ error: err.message });
+    }
+
+    // Filter files to include only .png images and exclude 'system.png'
+    const imageFiles = files.filter(file => file.endsWith('.png') && file !== 'system.png');
+    res.json(imageFiles);
+  });
+});
+
 // WebSocket server setup
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
