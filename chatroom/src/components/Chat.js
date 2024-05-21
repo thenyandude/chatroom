@@ -3,22 +3,22 @@ import NavigationButton from './NavigationButton';
 import '../css/Chat.css';
 
 function Chat({
-    username,
-    message,
+    user,
     rooms,
     currentRoom,
-    handleRoomChange,
     messages,
+    message,
     setMessage,
     sendMessage,
+    handleLogout,
+    handleRoomChange,
     deleteMessage,
     startEditing,
     submitEdit,
-    handleLogout,
-    isAdmin,
     editingMessage,
-    setEditingText,
-    editingText
+    setEditingMessage,
+    editingText,
+    setEditingText
 }) {
     return (
         <>
@@ -59,9 +59,9 @@ function Chat({
                                 {msg.isEdited && <span className="edited-indicator">(edited)</span>}
                                 <br />
                                 <small>{new Date(msg.timestamp).toLocaleString()}</small>
-                                {msg.user !== "System" && ((msg.user === username && !isAdmin) || isAdmin) && (
+                                {msg.user !== "System" && ((msg.user === user.username && !user.isAdmin) || user.isAdmin) && (
                                     <>
-                                        {msg.user === username && <button onClick={() => startEditing(msg)} className="button-tertiary">Edit</button>}
+                                        {msg.user === user.username && <button onClick={() => startEditing(msg)} className="button-tertiary">Edit</button>}
                                         <button onClick={() => deleteMessage(msg._id)} className="button-danger">Delete</button>
                                     </>
                                 )}

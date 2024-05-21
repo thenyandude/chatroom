@@ -26,6 +26,21 @@ function App() {
   const [editingText, setEditingText] = useState("");
 
   useEffect(() => {
+    const fetchRooms = async () => {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:5000/chat/rooms', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await response.json();
+      setRooms(data);
+    };
+
+    fetchRooms();
+  }, []);
+
+  useEffect(() => {
     const newSocket = new WebSocket('ws://localhost:5000');
     setSocket(newSocket);
 
@@ -43,11 +58,11 @@ function App() {
     };
 
     newSocket.onopen = () => {
-      newSocket.send(JSON.stringify({ type: 'joinRoom', room: 'general' }));
+      newSocket.send(JSON.stringify({ type: 'joinRoom', room: currentRoom }));
     };
 
     return () => newSocket.close();
-  }, []);
+  }, [currentRoom]);
 
   useEffect(() => {
     if (user.username) {
@@ -100,13 +115,62 @@ function App() {
     }
   };
 
+  const handleRoomChange = (newRoom) => {
+    setCurrentRoom(newRoom);
+    if (socket) {
+      socket.send(JSON.stringify({ type: 'joinRoom', room: newRoom }));
+    }
+  };
+
+  const deleteMessage = async (messageId) => {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`http://localhost:5000/chat/messages/${messageId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    if (response.ok) {
+      setMessages(prevMessages => prevMessages.filter(msg => msg._id !== messageId));
+    } else {
+      console.error('Failed to delete message');
+    }
+  };
+  
+  
+
+  const startEditing = (message) => {
+    setEditingMessage(message);
+    setEditingText(message.text);
+  };
+
+  const submitEdit = async (messageId, newText) => {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`http://localhost:5000/chat/messages/edit/${messageId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ text: newText, username: user.username, isAdmin: user.isAdmin }),
+    });
+    if (response.ok) {
+      const updatedMessage = await response.json();
+      setMessages(prevMessages => prevMessages.map(msg => msg._id === messageId ? updatedMessage : msg));
+      setEditingMessage(null);
+      setEditingText('');
+    } else {
+      console.error('Failed to edit message');
+    }
+  };
+
   return (
     <Routes>
       <Route path="/" element={<Navigate replace to="/login" />} />
       <Route path="/register" element={user.username ? <Navigate replace to="/chat" /> : <Register />} />
       <Route path="/login" element={user.username ? <Navigate replace to="/chat" /> : <Login onLogin={setUser} />} />
       <Route path="/settings" element={<UserSettings user={user} updateUser={setUser} />} />
-      <Route path="/chat" element={<Chat user={user} rooms={rooms} currentRoom={currentRoom} messages={messages} setMessage={setMessage} sendMessage={sendMessage} handleLogout={handleLogout} editingMessage={editingMessage} setEditingMessage={setEditingMessage} editingText={editingText} setEditingText={setEditingText} />} />
+      <Route path="/chat" element={<Chat user={user} rooms={rooms} currentRoom={currentRoom} messages={messages} setMessage={setMessage} sendMessage={sendMessage} handleLogout={handleLogout} handleRoomChange={handleRoomChange} deleteMessage={deleteMessage} startEditing={startEditing} submitEdit={submitEdit} editingMessage={editingMessage} setEditingMessage={setEditingMessage} editingText={editingText} setEditingText={setEditingText} />} />
     </Routes>
   );
 }
